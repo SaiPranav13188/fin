@@ -73,9 +73,24 @@ def update_me(body: UserPatch, user: User = Depends(current_user), db: Session =
 
 @router.delete("/me", status_code=204)
 def delete_me(user: User = Depends(current_user), db: Session = Depends(get_db)):
-    """Account deletion (required by Google Play). Personal data goes; shared ledgers keep an anonymous member."""
-    from ..models import Member
+    """Account deletion (required by Google Play).
+
+    Personal data goes: profile, login sessions, drafts, assistant logs, bills and subscriptions.
+    Shared groups stay for the friends who still use them, with this person shown as "Former member".
+    A group passes to another member who has an account; a group nobody else uses is deleted.
+    """
+    from ..models import AgentDraft, AgentRun, Group, Member
+    from ..services.ledger import delete_group_data
+    for g in db.scalars(select(Group).where(Group.owner_id == user.id)).all():
+        heir = next((m for m in g.members if m.user_id and m.user_id != user.id and m.active), None)
+        if heir:
+            g.owner_id = heir.user_id
+        else:
+            delete_group_data(db, g)
+    db.flush()
     for m in db.scalars(select(Member).where(Member.user_id == user.id)):
         m.user_id, m.upi_id, m.verified, m.name = None, None, False, "Former member"
+    db.query(AgentRun).filter(AgentRun.user_id == user.id).delete(synchronize_session=False)
+    db.query(AgentDraft).filter(AgentDraft.user_id == user.id).delete(synchronize_session=False)
     db.delete(db.get(User, user.id))
     db.commit()

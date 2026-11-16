@@ -108,6 +108,38 @@ def test_tracking_reminders_recurring(sai, trip, client):
     assert "Wifi" in sai.get(f"/groups/{g['id']}/export.csv").text
 
 
+def test_delete_group_with_history(sai, trip):
+    g, ids = trip
+    gid = g["id"]
+    sai.post(f"/groups/{gid}/expenses", json={"description": "Dinner", "amount_paise": 90000})
+    assert sai.delete(f"/groups/{gid}").status_code == 409  # not settled yet
+    for who in ("Rahul", "Priya"):
+        sai.post(f"/groups/{gid}/settlements", json={"from_member": ids[who], "to_member": ids["Sai"], "amount_paise": 30000, "method": "cash"})
+    sai.post(f"/groups/{gid}/recurring", json={"expense": {"description": "Wifi", "amount_paise": 300}, "next_run": "2030-01-01"})
+    assert sai.delete(f"/groups/{gid}").status_code == 204
+    assert sai.get(f"/groups/{gid}").status_code == 404
+
+
 def test_delete_account(client, sai, trip):
+    g, ids = trip
+    gid = g["id"]
+    sai.post(f"/groups/{gid}/expenses", json={"description": "Dinner", "amount_paise": 90000})
+    solo = sai.post("/groups", json={"name": "Just me"}).json()["id"]
+    sai.post(f"/groups/{solo}/expenses", json={"description": "Chai", "amount_paise": 2000})
+    sai.post("/agent/draft", json={"text": "cab 450", "group_id": gid})
+    priya = Api(client, "Priya")
+    token = sai.post(f"/groups/{gid}/invite").json()["token"]
+    priya.post(f"/join/{token}?claim_member_id={ids['Priya']}")
+
     assert sai.delete("/auth/me").status_code == 204
     assert sai.get("/auth/me").status_code == 401
+    # the shared group survives for Priya, now owned by her, with Sai anonymised and the history intact
+    g2 = priya.get(f"/groups/{gid}").json()
+    assert "Former member" in [m["name"] for m in g2["members"]] and "Sai" not in [m["name"] for m in g2["members"]]
+    assert len(priya.get(f"/groups/{gid}/expenses").json()) == 1
+    assert priya.post(f"/groups/{gid}/invite").status_code == 200
+    from app.db import SessionLocal
+    from app.models import AgentRun, Group
+    with SessionLocal() as db:
+        assert db.get(Group, solo) is None  # nobody else used it
+        assert db.query(AgentRun).filter(AgentRun.input.like("%cab 450%")).count() == 0

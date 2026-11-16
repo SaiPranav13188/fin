@@ -7,7 +7,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..config import get_settings
-from ..models import Expense, ExpensePayer, Group, Item, Member, Message, Settlement, Share, User
+from ..models import (AgentDraft, Expense, ExpensePayer, Group, Item, Member, Message, RecurringExpense, Settlement,
+                      Share, User)
 from ..schemas import ExpenseIn, ExpenseOut, GroupOut, ItemIn, MemberOut, TransferOut
 from . import money
 
@@ -144,3 +145,13 @@ def next_date(d: date, frequency: str) -> date:
         return d.replace(year=d.year + 1, day=min(d.day, calendar.monthrange(d.year + 1, d.month)[1]))
     y, m = (d.year + 1, 1) if d.month == 12 else (d.year, d.month + 1)
     return date(y, m, min(d.day, calendar.monthrange(y, m)[1]))
+
+
+def delete_group_data(db: Session, group: Group) -> None:
+    """Deletes a group and everything in it, children first, so Postgres foreign keys are never violated."""
+    for e in db.scalars(select(Expense).where(Expense.group_id == group.id)).all():
+        db.delete(e)  # payers, shares and items go with it
+    for model in (Settlement, Message, RecurringExpense, AgentDraft):
+        db.query(model).filter(model.group_id == group.id).delete(synchronize_session=False)
+    db.flush()
+    db.delete(group)

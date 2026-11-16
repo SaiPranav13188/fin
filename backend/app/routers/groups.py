@@ -104,7 +104,7 @@ def delete_group(group_id: str, user: User = Depends(current_user), db: Session 
         raise HTTPException(403, "Only the person who made the group can delete it")
     if any(ledger.group_net(db, g).values()):
         raise HTTPException(409, "Settle up before deleting this group")
-    db.delete(g)
+    ledger.delete_group_data(db, g)
     db.commit()
 
 
