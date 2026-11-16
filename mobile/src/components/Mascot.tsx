@@ -37,6 +37,7 @@ type Props = {
 
 export function Mascot({ size = 120, mood = 'idle', prop = 'none', lookX, lookY, hopKey, speech }: Props) {
   const reduce = useStore((s) => s.settings.reduceMotion);
+  const outfit = useStore((s) => s.settings.outfit);
   const uid = useId().replace(/[^a-zA-Z0-9]/g, '');
   const blink = useSharedValue(1); // eyelid: 1 open, 0 shut
   const breathe = useSharedValue(0);
@@ -217,6 +218,25 @@ export function Mascot({ size = 120, mood = 'idle', prop = 'none', lookX, lookY,
           {/* paws: rise to cover the eyes when Fin must not peek */}
           <ACircle r={9.5} fill="#FFD152" stroke={colors.coinDark} strokeWidth={2.4} animatedProps={pawL} />
           <ACircle r={9.5} fill="#FFD152" stroke={colors.coinDark} strokeWidth={2.4} animatedProps={pawR} />
+          {/* outfits, unlocked by moments */}
+          {outfit === 'cap' ? (
+            <G>
+              <Path d="M22 44 Q60 -2 98 44 Z" fill="#7B4DFF" />
+              <Path d="M60 40 Q96 38 112 50 Q92 52 60 48 Z" fill="#5B34D6" />
+              <Circle cx={60} cy={20} r={4} fill="#FFDD6B" />
+            </G>
+          ) : outfit === 'party' ? (
+            <G>
+              <Path d="M60 -6 L38 38 Q60 46 82 38 Z" fill="#FF6FB1" />
+              <Path d="M49 16 L71 16 M44 27 L76 27" stroke="#FFF" strokeWidth={3} strokeLinecap="round" />
+              <Circle cx={60} cy={-6} r={6} fill="#FFDD6B" />
+            </G>
+          ) : outfit === 'scarf' ? (
+            <G>
+              <Path d="M18 96 Q60 114 102 96 L100 108 Q60 126 20 108 Z" fill="#FF7A6B" />
+              <Path d="M78 108 L88 128 L98 124 L90 104 Z" fill="#E85C4D" />
+            </G>
+          ) : null}
           {/* feet */}
           <Ellipse cx={46} cy={121} rx={9} ry={5} fill={colors.coinDark} />
           <Ellipse cx={74} cy={121} rx={9} ry={5} fill={colors.coinDark} />

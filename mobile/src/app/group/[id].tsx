@@ -11,6 +11,7 @@ import { Confetti, PizzaChart, Progress } from '@/components/fx';
 import { Avatar, Btn, Empty, Field, Press, Screen, Sheet, Skeleton, T } from '@/components/ui';
 import { ApiError, Expense, Member, Message, api } from '@/lib/api';
 import { queryClient, useBalances, useExpenses, useGroup, useGroupLive, useMessages } from '@/lib/hooks';
+import { sfx } from '@/lib/sfx';
 import { useStore } from '@/lib/store';
 import { CATEGORY, colors, font, radius, shadow, spring } from '@/lib/theme';
 import { useTilt } from '@/lib/tilt';
@@ -104,6 +105,14 @@ export default function GroupScreen() {
   const [friend, setFriend] = useState('');
   const [upi, setUpi] = useState('');
   const [saving, setSaving] = useState(false);
+  const pickedUpi = useStore((s) => s.pickedUpi);
+  // A UPI ID scanned from a friend's QR comes back here.
+  React.useEffect(() => {
+    if (pickedUpi && editing) {
+      setUpi(pickedUpi);
+      useStore.getState().setPickedUpi(null);
+    }
+  }, [pickedUpi, editing]);
   const [celebrate, setCelebrate] = useState(0);
   const wasSettled = useRef<boolean | null>(null);
   const showToast = useStore((s) => s.showToast);
@@ -121,6 +130,13 @@ export default function GroupScreen() {
     if (wasSettled.current === false && balances.data.all_settled) {
       setCelebrate(Date.now());
       haptic.success();
+      sfx.success();
+      const first = expenses.data[expenses.data.length - 1]?.created_at ?? '';
+      const started = new Date(/[zZ]|[+-]\d\d:?\d\d$/.test(first) ? first : first + 'Z').getTime();
+      const fast = Date.now() - started < 24 * 3600 * 1000;
+      useStore.getState().earn(fast
+        ? { key: 'settled-fast', title: 'Settled in under 24 hours ⚡', sub: `${group.data?.name ?? 'Your group'} cleared every rupee in a day.`, unlocks: 'party' }
+        : { key: 'settled', title: 'All settled 🎉', sub: `Nobody owes anybody in ${group.data?.name ?? 'your group'}.`, unlocks: 'party' });
     }
     wasSettled.current = balances.data.all_settled;
   }, [balances.data?.all_settled, expenses.data?.length]);
@@ -307,6 +323,7 @@ export default function GroupScreen() {
         <View style={{ gap: 12 }}>
           <T v="small" color={colors.inkSoft}>You need this to pay {editing?.name} from Fin. Ask them for it, and check the name in your UPI app the first time you pay.</T>
           <Field value={upi} onChangeText={setUpi} placeholder="name@okhdfcbank" autoCapitalize="none" autoCorrect={false} />
+          <Btn title="Scan their QR instead" kind="soft" icon="📷" onPress={() => router.push({ pathname: '/qr', params: { mode: 'pick' } })} />
           <Btn title={t("Save")} onPress={saveUpi} loading={saving} />
         </View>
       </Sheet>

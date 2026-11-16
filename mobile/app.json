@@ -94,7 +94,8 @@
           "faceIDPermission": "Fin uses biometrics to reveal your balance."
         }
       ],
-      "expo-notifications"
+      "expo-notifications",
+      "expo-audio"
     ],
     "experiments": {
       "typedRoutes": false

@@ -24,6 +24,7 @@ const ACTIONS = [
   { key: 'split', emoji: '🍕', label: 'Split', go: '/add-expense' },
   { key: 'scan', emoji: '🧾', label: 'Scan bill', go: '/scan' },
   { key: 'ask', emoji: '✨', label: 'Ask Fin', go: '/assistant' },
+  { key: 'qr', emoji: '📷', label: 'Pay QR', go: '/qr' },
   { key: 'settle', emoji: '🤝', label: 'Settle', go: '/settle' },
 ] as const;
 
@@ -111,7 +112,7 @@ export default function Home() {
   const go = (path: string) => {
     setOpen(false);
     const first = groups.data?.[0];
-    if (!first && path !== '/assistant') return router.push('/group/new');
+    if (!first && path !== '/assistant' && path !== '/qr') return router.push('/group/new');
     router.push(path as any);
   };
 

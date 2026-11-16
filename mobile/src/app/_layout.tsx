@@ -11,7 +11,9 @@ import { AccessibilityInfo } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { ToastHost } from '@/components/ui';
+import { Confetti } from '@/components/fx';
+import { Mascot } from '@/components/Mascot';
+import { MomentHost, ToastHost } from '@/components/ui';
 import { queryClient, refreshAll } from '@/lib/hooks';
 import { startQueueSync } from '@/lib/offline';
 import { useStore } from '@/lib/store';
@@ -62,6 +64,7 @@ export default function RootLayout() {
             <Stack.Screen name="add-expense" options={{ animation: 'slide_from_bottom' }} />
           </Stack>
           <ToastHost />
+          <MomentHost mascot={<Mascot size={120} mood="cheer" />} confetti={(fire) => <Confetti fire={fire} coins />} />
         </QueryClientProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

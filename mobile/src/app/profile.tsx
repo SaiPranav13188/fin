@@ -48,7 +48,7 @@ export default function Profile() {
       } },
     ]);
 
-  const toggle = (key: 'haptics' | 'reduceMotion', label: string, sub: string) => (
+  const toggle = (key: 'haptics' | 'reduceMotion' | 'sound', label: string, sub: string) => (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
       <View style={{ flex: 1 }}><T w="bold">{label}</T><T v="small" color={colors.inkSoft}>{sub}</T></View>
       <Switch value={settings[key]} onValueChange={(v) => { setSetting(key, v); haptic.tick(); }} trackColor={{ true: colors.pink, false: colors.line }} thumbColor="#fff" />
@@ -75,7 +75,17 @@ export default function Profile() {
         </Card>
         <Card index={2} style={{ gap: 16 }}>
           {toggle('haptics', t('Haptics'), t("Little taps as you swipe and pay"))}
+          {toggle('sound', 'Sounds', 'A coin clink and a soft chime. Follows silent mode')}
           {toggle('reduceMotion', t("Reduce motion"), t("Swap big animations for simple fades"))}
+        </Card>
+        <Card index={3} style={{ gap: 12 }}>
+          <T v="tiny" color={colors.inkFaint}>Fin's outfit</T>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            {([['none', 'None', null], ['cap', '🧢 Cap', 'first-split'], ['party', '🥳 Party hat', 'settled'], ['scarf', '🧣 Scarf', 'bills-3']] as const).map(([k, l, need]) => {
+              const open = !need || settings.earned.some((e) => e.startsWith(need));
+              return <Chip key={k} label={open ? l : `🔒 ${l}`} active={settings.outfit === k} onPress={() => (open ? setSetting('outfit', k) : showToast(need === 'first-split' ? 'Add your first expense to unlock this' : need === 'settled' ? 'Settle a whole group to unlock this' : 'Mark 3 bills as paid to unlock this', 'info'))} />;
+            })}
+          </View>
         </Card>
         <Btn title={t("Privacy policy")} kind="ghost" onPress={() => Linking.openURL(`${API_URL}/privacy`)} />
         <Btn title={t("Log out")} kind="soft" onPress={logout} />

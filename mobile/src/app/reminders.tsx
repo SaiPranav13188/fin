@@ -57,7 +57,16 @@ export default function Reminders() {
   };
   const act = async (path: string, method: 'POST' | 'DELETE') => {
     haptic.bump();
-    try { await api(path, { method }); reload(); } catch (e) { showToast(e instanceof ApiError ? e.message : t("Try again"), 'warn'); }
+    try {
+      await api(path, { method });
+      reload();
+      if (method === 'POST') {
+        const st = useStore.getState();
+        const n = st.settings.billsPaid + 1;
+        st.setSetting('billsPaid', n);
+        if (n >= 3) st.earn({ key: 'bills-3', title: '3 bills paid on time 🧾', sub: 'Future you says thanks.', unlocks: 'scarf' });
+      }
+    } catch (e) { showToast(e instanceof ApiError ? e.message : t("Try again"), 'warn'); }
   };
 
   const section = (title: string, rows: Row[] | undefined, base: string, emoji: string) => (

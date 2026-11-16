@@ -3,7 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useEffect } from 'react';
 import {
-  ActivityIndicator, Dimensions, KeyboardAvoidingView, Modal, Platform, Pressable, StyleProp, StyleSheet, Text, TextInput,
+  ActivityIndicator, Dimensions, KeyboardAvoidingView, Modal, Platform, Pressable, Share, StyleProp, StyleSheet, Text, TextInput,
   TextInputProps, TextProps, TextStyle, View, ViewStyle,
 } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -304,3 +304,38 @@ const styles = StyleSheet.create({
   grabber: { width: 44, height: 5, borderRadius: 3, backgroundColor: colors.line },
   toast: { position: 'absolute', alignSelf: 'center', left: 24, right: 24, paddingVertical: 12, paddingHorizontal: 18, borderRadius: radius.pill, zIndex: 100, ...shadow },
 });
+
+
+// ---------- moments: a celebration card, shown once per achievement, with a share button ----------
+export function MomentHost({ mascot, confetti }: { mascot: React.ReactNode; confetti: (fire: number) => React.ReactNode }) {
+  const moment = useStore((s) => s.moment);
+  const close = useStore((s) => s.closeMoment);
+  const setSetting = useStore((s) => s.setSetting);
+  const [fire, setFire] = React.useState(0);
+  useEffect(() => {
+    if (moment) {
+      setFire(Date.now());
+      haptic.success();
+    }
+  }, [moment?.key]);
+  if (!moment) return null;
+  return (
+    <Modal visible transparent animationType="fade" onRequestClose={close} statusBarTranslucent>
+      <View style={{ flex: 1, backgroundColor: colors.dim, alignItems: 'center', justifyContent: 'center', padding: 28 }}>
+        {confetti(fire)}
+        <Animated.View entering={FadeInDown.springify().damping(11)} style={[styles.card, { alignItems: 'center', gap: 10, alignSelf: 'stretch', paddingVertical: 28 }]}>
+          {mascot}
+          <T v="tiny" color={colors.pink}>New moment</T>
+          <T v="h1" center>{moment.title}</T>
+          <T color={colors.inkSoft} center>{moment.sub}</T>
+          {moment.unlocks ? <T v="small" w="bold" color={colors.purple} center>🎁 You unlocked a new outfit for Fin</T> : null}
+          <View style={{ alignSelf: 'stretch', gap: 8, marginTop: 10 }}>
+            {moment.unlocks ? <Btn title="Wear it now" onPress={() => { setSetting('outfit', moment.unlocks!); close(); }} /> : null}
+            <Btn title="Share" kind="soft" icon="📣" onPress={() => Share.share({ message: `${moment.title} ${moment.sub} (on Fin)` }).catch(() => {})} />
+            <Btn title="Nice!" kind="ghost" onPress={close} />
+          </View>
+        </Animated.View>
+      </View>
+    </Modal>
+  );
+}

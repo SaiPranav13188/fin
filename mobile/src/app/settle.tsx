@@ -14,6 +14,7 @@ import { Confetti, SwipeToPay } from '@/components/fx';
 import { Avatar, Btn, Card, Chip, Empty, Press, RollingNumber, Screen, Skeleton, T } from '@/components/ui';
 import { ApiError, SafetyFlag, api } from '@/lib/api';
 import { refreshAll, useGroup, useGroups } from '@/lib/hooks';
+import { sfx } from '@/lib/sfx';
 import { useStore } from '@/lib/store';
 import { colors, radius, spring } from '@/lib/theme';
 import { haptic, rupees } from '@/lib/util';
@@ -138,6 +139,8 @@ export default function Settle() {
       setPhase('success');
       setBoom(Date.now());
       haptic.success();
+      sfx.coin();
+      setTimeout(sfx.success, 250);
       float.value = 0;
       float.value = withDelay(350, withTiming(1, { duration: 900, easing: Easing.out(Easing.cubic) }));
       refreshAll();

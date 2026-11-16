@@ -12,6 +12,7 @@ import { Avatar, Btn, Chip, Press, RollingNumber, Screen, T } from '@/components
 import { ApiError, Draft, api } from '@/lib/api';
 import { refreshAll, useExpenses, useGroup, useGroups } from '@/lib/hooks';
 import { enqueueExpense } from '@/lib/offline';
+import { sfx } from '@/lib/sfx';
 import { useStore } from '@/lib/store';
 import { CATEGORY, colorFor, colors, font, radius, shadow, spring } from '@/lib/theme';
 import { allocate, evalAmount, haptic, rupees } from '@/lib/util';
@@ -120,7 +121,8 @@ export default function AddExpense() {
       // "Sliced!": the pizza bursts apart.
       setSliced(Date.now());
       haptic.success();
-      if (history.data?.length === 0) showToast('First split in this group! 🎉', 'ok');
+      sfx.slice();
+      useStore.getState().earn({ key: 'first-split', title: 'First split!', sub: 'You sliced your first bill.', unlocks: 'cap' });
       burst.value = withSequence(withSpring(1, spring.bouncy), withTiming(1, { duration: 700 }));
       await refreshAll();
       setTimeout(() => (router.canGoBack() ? router.back() : router.replace(`/group/${groupId}`)), 1250);
