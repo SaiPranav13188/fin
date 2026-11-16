@@ -2,7 +2,7 @@ import * as Linking from 'expo-linking';
 import React, { useEffect, useState } from 'react';
 import { Alert, ScrollView, Switch, View } from 'react-native';
 
-import { Chillar } from '@/components/Chillar';
+import { Mascot } from '@/components/Mascot';
 import { Btn, Card, Chip, Field, Screen, T } from '@/components/ui';
 import { API_URL, ApiError, api } from '@/lib/api';
 import { queryClient, useMe } from '@/lib/hooks';
@@ -57,7 +57,7 @@ export default function Profile() {
   return (
     <Screen title="You">
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 16, paddingBottom: 50 }} keyboardShouldPersistTaps="handled">
-        <View style={{ alignItems: 'center' }}><Chillar size={110} mood="happy" /></View>
+        <View style={{ alignItems: 'center' }}><Mascot size={110} mood="happy" /></View>
         <Card style={{ gap: 12 }}>
           <Field label="Name" value={name} onChangeText={setName} maxLength={80} />
           <Field label="Your UPI ID (friends pay you here)" value={upi} onChangeText={setUpi} autoCapitalize="none" placeholder="name@okhdfcbank" />

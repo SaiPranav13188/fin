@@ -3,7 +3,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 
-import { Chillar } from '@/components/Chillar';
+import { Mascot } from '@/components/Mascot';
 import { Avatar, Btn, Press, Screen, T } from '@/components/ui';
 import { ApiError, api } from '@/lib/api';
 import { refreshAll } from '@/lib/hooks';
@@ -37,7 +37,7 @@ export default function Join() {
   return (
     <Screen title="Join group">
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 14, paddingBottom: 40 }}>
-        <Chillar size={130} mood={error ? 'worried' : info ? 'excited' : 'thinking'} speech={error ?? (info ? "You're invited!" : 'Checking the link…')} />
+        <Mascot size={130} mood={error ? 'worried' : info ? 'excited' : 'thinking'} speech={error ?? (info ? "You're invited!" : 'Checking the link…')} />
         {info ? (
           <>
             <Text style={{ fontSize: 48 }}>{info.emoji}</Text>

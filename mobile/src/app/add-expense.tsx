@@ -6,7 +6,7 @@ import Animated, {
   FadeIn, FadeInDown, FadeOut, LinearTransition, ZoomIn, useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming,
 } from 'react-native-reanimated';
 
-import { Chillar, Mood } from '@/components/Chillar';
+import { Mascot, Mood } from '@/components/Mascot';
 import { Confetti, Keypad, PizzaChart } from '@/components/fx';
 import { Avatar, Btn, Chip, Press, RollingNumber, Screen, T } from '@/components/ui';
 import { ApiError, Draft, api } from '@/lib/api';
@@ -182,7 +182,7 @@ export default function AddExpense() {
         <View style={{ alignItems: 'center' }}>
           <PizzaChart values={members.map((m) => shares[m.id] ?? 0)} size={176} burst={burst} />
           <View style={{ position: 'absolute', right: 0, bottom: -6 }}>
-            <Chillar size={74} mood={judge} speech={sliced ? 'Sliced!' : problem && total ? problem : undefined} />
+            <Mascot size={74} mood={judge} speech={sliced ? 'Sliced!' : problem && total ? problem : undefined} />
           </View>
           <Press onPress={() => setStep('amount')} style={{ position: 'absolute', left: 0, top: 6 }} label="Change amount">
             <T v="tiny" color={colors.inkFaint}>total</T>

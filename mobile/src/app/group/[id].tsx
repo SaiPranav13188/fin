@@ -6,7 +6,7 @@ import Animated, { FadeInDown, LinearTransition, interpolate, useAnimatedStyle, 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scheduleOnRN } from 'react-native-worklets';
 
-import { Chillar } from '@/components/Chillar';
+import { Mascot } from '@/components/Mascot';
 import { Confetti, PizzaChart, Progress } from '@/components/fx';
 import { Avatar, Btn, Empty, Press, Screen, Sheet, Skeleton, T } from '@/components/ui';
 import { ApiError, Expense, Member, Message, api } from '@/lib/api';
@@ -211,7 +211,7 @@ export default function GroupScreen() {
             onContentSizeChange={() => list.current?.scrollToEnd({ animated: true })}
             showsVerticalScrollIndicator={false}
             ListEmptyComponent={
-              <Empty title="Nothing here yet" sub="Add the first expense, or just type “I paid 600 for pizza”."><Chillar size={110} mood="idle" /></Empty>
+              <Empty title="Nothing here yet" sub="Add the first expense, or just type “I paid 600 for pizza”."><Mascot size={110} mood="idle" /></Empty>
             }
           />
         )}

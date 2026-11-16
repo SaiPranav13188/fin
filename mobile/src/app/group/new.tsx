@@ -1,10 +1,10 @@
-/** Make a group: friends spring into seats around a table, and Chillar holds a sign that flips as you type. */
+/** Make a group: friends spring into seats around a table, and Fin holds a sign that flips as you type. */
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, View } from 'react-native';
 import Animated, { ZoomIn, ZoomOut, useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 
-import { Chillar } from '@/components/Chillar';
+import { Mascot } from '@/components/Mascot';
 import { Avatar, Btn, Chip, Field, Press, Screen, T } from '@/components/ui';
 import { ApiError, api } from '@/lib/api';
 import { refreshAll } from '@/lib/hooks';
@@ -84,13 +84,13 @@ export default function NewGroup() {
             })}
           </View>
 
-          {/* Chillar's sign */}
+          {/* Fin's sign */}
           <View style={{ alignItems: 'center', marginTop: -6 }}>
             <Animated.View style={[{ backgroundColor: '#fff', borderRadius: radius.md, paddingHorizontal: 18, paddingVertical: 10, borderWidth: 2.5, borderColor: colors.ink, minWidth: 190, alignItems: 'center' }, sign]}>
               <Text numberOfLines={1} style={{ fontFamily: font.extra, fontSize: 17, color: name ? colors.ink : colors.inkFaint }}>{name || 'Name me!'}</Text>
             </Animated.View>
             <View style={{ width: 4, height: 14, backgroundColor: colors.ink }} />
-            <View style={{ marginTop: -8 }}><Chillar size={72} mood={friends.length ? 'happy' : 'idle'} hopKey={friends.length} /></View>
+            <View style={{ marginTop: -8 }}><Mascot size={72} mood={friends.length ? 'happy' : 'idle'} hopKey={friends.length} /></View>
           </View>
 
           <View style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-end' }}>

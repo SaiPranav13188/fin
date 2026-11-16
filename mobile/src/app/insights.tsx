@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { ScrollView, Text, TextInput, View } from 'react-native';
 import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withDelay, withSpring } from 'react-native-reanimated';
 
-import { Chillar } from '@/components/Chillar';
+import { Mascot } from '@/components/Mascot';
 import { Card, Chip, Dots, Empty, Press, RollingNumber, Screen, Skeleton, T } from '@/components/ui';
 import { ApiError, api } from '@/lib/api';
 import { useSummary } from '@/lib/hooks';
@@ -63,7 +63,7 @@ export default function Insights() {
         </Card>
 
         <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8 }}>
-          <Chillar size={70} mood={busy ? 'thinking' : answer ? 'happy' : 'idle'} prop={busy ? 'magnifier' : 'none'} />
+          <Mascot size={70} mood={busy ? 'thinking' : answer ? 'happy' : 'idle'} prop={busy ? 'magnifier' : 'none'} />
           <View style={{ flex: 1, backgroundColor: '#fff', borderRadius: 20, borderBottomLeftRadius: 6, padding: 14, minHeight: 56, justifyContent: 'center' }}>
             {busy ? <Dots /> : <T w="semi">{answer?.answer ?? 'Ask me anything about your money.'}</T>}
           </View>

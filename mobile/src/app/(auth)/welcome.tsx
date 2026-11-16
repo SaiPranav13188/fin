@@ -7,7 +7,7 @@ import Animated, { FadeIn, FadeInDown, FadeOut, useSharedValue, withSequence, wi
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { scheduleOnRN } from 'react-native-worklets';
 
-import { Chillar, Mood } from '@/components/Chillar';
+import { Mascot, Mood } from '@/components/Mascot';
 import { Confetti, PizzaChart, SwipeToPay } from '@/components/fx';
 import { Avatar, Btn, Press, T } from '@/components/ui';
 import { useStore } from '@/lib/store';
@@ -27,7 +27,7 @@ export default function Welcome() {
   const lookY = useSharedValue(0);
   const burst = useSharedValue(0);
 
-  // Chillar's eyes follow your finger anywhere on the screen.
+  // Fin's eyes follow your finger anywhere on the screen.
   const follow = Gesture.Pan()
     .onUpdate((e) => {
       lookX.value = (e.absoluteX - 195) / 150;
@@ -76,10 +76,10 @@ export default function Welcome() {
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 28, gap: 22 }}>
           {step === 0 ? (
             <Animated.View key="s0" entering={FadeIn} exiting={FadeOut} style={{ alignItems: 'center', gap: 22 }}>
-              <Press onPress={() => { setMood('excited'); setTimeout(next, 700); }} scaleTo={0.9} label="Wake Chillar">
-                <Chillar size={170} mood={mood} lookX={lookX} lookY={lookY} speech={mood === 'sleepy' ? 'zzz… tap me!' : 'Oh! Hello!'} />
+              <Press onPress={() => { setMood('excited'); setTimeout(next, 700); }} scaleTo={0.9} label="Wake Fin">
+                <Mascot size={170} mood={mood} lookX={lookX} lookY={lookY} speech={mood === 'sleepy' ? 'zzz… tap me!' : 'Oh! Hello!'} />
               </Press>
-              <T v="h1" center>Meet Chillar</T>
+              <T v="h1" center>Meet Fin</T>
               <T color={colors.inkSoft} center>Your tiny money buddy. Tap to wake it up. Drag your finger and watch its eyes.</T>
             </Animated.View>
           ) : step === 1 ? (
@@ -95,14 +95,14 @@ export default function Welcome() {
             </Animated.View>
           ) : step === 2 ? (
             <Animated.View key="s2" entering={FadeInDown.springify()} exiting={FadeOut} style={{ alignItems: 'center', gap: 22, width: '100%' }}>
-              <Chillar size={120} mood={paid ? 'cheer' : 'happy'} prop="coin" lookX={lookX} lookY={lookY} />
+              <Mascot size={120} mood={paid ? 'cheer' : 'happy'} prop="coin" lookX={lookX} lookY={lookY} />
               <T v="h1" center>Swipe to settle</T>
               <T color={colors.inkSoft} center>Fin opens your own UPI app with everything filled in. Fin never holds your money.</T>
               <SwipeToPay label="Try a swipe" onDone={() => { setPaid(Date.now()); setTimeout(next, 1300); }} />
             </Animated.View>
           ) : (
             <Animated.View key="s3" entering={FadeInDown.springify()} style={{ alignItems: 'center', gap: 16, width: '100%' }}>
-              <Chillar size={160} mood="proud" lookX={lookX} lookY={lookY} speech="Let's split something!" />
+              <Mascot size={160} mood="proud" lookX={lookX} lookY={lookY} speech="Let's split something!" />
               <T v="hero" center>Fin</T>
               <T color={colors.inkSoft} center>Tell Fin what happened. It splits the bill, reminds your friends and helps you settle up.</T>
               <View style={{ height: 8 }} />

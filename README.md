@@ -2,7 +2,7 @@
 
 Fin is an Android app for splitting money with friends, flatmates and family. You tell it what happened
 ("I paid 2400 for dinner, Rahul skipped drinks"), and a team of AI agents drafts the split, tracks who owes whom,
-writes polite reminders and helps you settle up through your own UPI app. A coin-shaped mascot called Chillar
+writes polite reminders and helps you settle up through your own UPI app. A coin-shaped mascot, also called Fin,
 reacts to every step.
 
 Fin never holds or moves money. Paying opens GPay, PhonePe or Paytm with the details filled in.
@@ -14,7 +14,7 @@ Fin never holds or moves money. Paying opens GPay, PhonePe or Paytm with the det
 | Folder | What it is |
 |---|---|
 | [backend/](backend/) | FastAPI service: accounts, groups, expenses, balances, settlements, chat, reminders, and the agent system |
-| [mobile/](mobile/) | Expo (React Native) app: screens, the Chillar mascot and all animations |
+| [mobile/](mobile/) | Expo (React Native) app: screens, the Fin mascot and all animations |
 | [.github/workflows/](.github/workflows/) | CI: lint, tests, the agent eval gate, migrations, typecheck and a Docker build |
 
 ## The agent system
@@ -97,4 +97,4 @@ Secrets live only in environment variables. `.env` files, keystores and service-
 ## Credits
 
 The playful payments idea was inspired by a public UPI redesign concept (`loksh1910/puffin`). That project has no
-license, so Fin uses none of its code, artwork or mascot. All code, designs and the Chillar mascot here are original.
+license, so Fin uses none of its code, artwork or mascot. All code, designs and the Fin mascot here are original.

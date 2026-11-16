@@ -9,7 +9,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import Svg, { Path } from 'react-native-svg';
 
-import { Chillar } from '@/components/Chillar';
+import { Mascot } from '@/components/Mascot';
 import { Confetti, SwipeToPay } from '@/components/fx';
 import { Avatar, Btn, Card, Chip, Empty, Press, RollingNumber, Screen, Skeleton, T } from '@/components/ui';
 import { ApiError, SafetyFlag, api } from '@/lib/api';
@@ -24,7 +24,7 @@ type Phase = 'plan' | 'check' | 'pay' | 'processing' | 'ask' | 'success' | 'pend
 const CALM = ['Breathe in… breathe out…', 'Banks are slow sometimes ☕', 'Carrying your coins carefully…', 'Almost there…'];
 const APath = Animated.createAnimatedComponent(Path);
 
-/** Chillar carries a coin along a dotted arc from You to your friend. The trail is the progress bar. */
+/** Fin carries a coin along a dotted arc from You to your friend. The trail is the progress bar. */
 function Processing({ from, to }: { from: string; to: string }) {
   const t = useSharedValue(0);
   const [line, setLine] = useState(0);
@@ -48,7 +48,7 @@ function Processing({ from, to }: { from: string; to: string }) {
           <Path d={arc} stroke={colors.line} strokeWidth={4} strokeDasharray="2 10" strokeLinecap="round" fill="none" />
           <APath d={arc} stroke={colors.pink} strokeWidth={4} strokeLinecap="round" fill="none" strokeDasharray={`${width * 1.25}`} animatedProps={trail} />
         </Svg>
-        <Animated.View style={[{ position: 'absolute', left: 0, top: 90 }, walker]}><Chillar size={64} mood="happy" prop="coin" /></Animated.View>
+        <Animated.View style={[{ position: 'absolute', left: 0, top: 90 }, walker]}><Mascot size={64} mood="happy" prop="coin" /></Animated.View>
         <View style={{ position: 'absolute', left: -22, top: 78 }}><Avatar name={from} index={0} size={40} /></View>
         <View style={{ position: 'absolute', right: -22, top: 78 }}><Avatar name={to} index={1} size={40} /></View>
       </View>
@@ -162,11 +162,11 @@ export default function Settle() {
             </ScrollView>
           ) : null}
           {!plan ? <><Skeleton h={90} /><Skeleton h={90} /></> : plan.steps.length === 0 ? (
-            <Empty title="All settled 🎉" sub="Nobody owes anybody in this group."><Chillar size={130} mood="cheer" /></Empty>
+            <Empty title="All settled 🎉" sub="Nobody owes anybody in this group."><Mascot size={130} mood="cheer" /></Empty>
           ) : (
             <>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                <Chillar size={62} mood="thinking" prop="calculator" />
+                <Mascot size={62} mood="thinking" prop="calculator" />
                 <T color={colors.inkSoft} style={{ flex: 1 }}>{plan.summary}</T>
               </View>
               {plan.steps.map((s, i) => (
@@ -200,7 +200,7 @@ export default function Settle() {
 
       {phase === 'check' && cur ? (
         <Animated.View entering={FadeInDown.springify()} style={{ flex: 1, gap: 14, paddingTop: 44 }}>
-          <View style={{ alignItems: 'center' }}><Chillar size={110} mood="thinking" prop="magnifier" speech="One quick check first" /></View>
+          <View style={{ alignItems: 'center' }}><Mascot size={110} mood="thinking" prop="magnifier" speech="One quick check first" /></View>
           {flags.map((f, i) => (
             <Animated.View key={f.code} entering={FadeInDown.delay(i * 80).springify()} style={[styles.flag, { backgroundColor: f.level === 'block' ? colors.coralSoft : colors.amberSoft }]}>
               <Text style={{ fontSize: 22 }}>{f.level === 'block' ? '✋' : '🛡️'}</Text>
@@ -232,7 +232,7 @@ export default function Settle() {
 
       {phase === 'ask' && cur ? (
         <Animated.View entering={FadeInDown.springify()} style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 14 }}>
-          <Chillar size={130} mood="idle" speech="Did it go through?" />
+          <Mascot size={130} mood="idle" speech="Did it go through?" />
           <T v="h2" center>{rupees(cur.amount_paise)} to {cur.to_name}</T>
           <View style={{ alignSelf: 'stretch', gap: 10, marginTop: 10 }}>
             <Btn title="Yes, it's paid" icon="✓" onPress={() => record(cur, 'upi')} loading={busy} />
@@ -244,7 +244,7 @@ export default function Settle() {
 
       {phase === 'pending' && cur ? (
         <Animated.View entering={FadeIn} style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 }}>
-          <Chillar size={140} mood="idle" prop="tea" />
+          <Mascot size={140} mood="idle" prop="tea" />
           <T v="h2" center>Sipping tea while we wait</T>
           <T color={colors.inkSoft} center style={{ maxWidth: 280 }}>Banks usually take about 30 seconds. Your money is safe either way.</T>
           <View style={styles.timer}><T v="h3" color={colors.purple}>{waited < 30 ? `${30 - waited}s` : 'Any moment now…'}</T></View>
@@ -257,7 +257,7 @@ export default function Settle() {
 
       {phase === 'failed' && cur ? (
         <Animated.View entering={FadeIn} style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 }}>
-          <Chillar size={140} mood="worried" prop="umbrella" />
+          <Mascot size={140} mood="worried" prop="umbrella" />
           <T v="h2" center>That one didn't go through</T>
           <T color={colors.inkSoft} center style={{ maxWidth: 290 }}>No money left your account unless your bank says so. This can happen if the UPI app closed, the bank was busy, or no UPI app is installed.</T>
           <View style={{ alignSelf: 'stretch', gap: 10, marginTop: 14 }}>
@@ -274,7 +274,7 @@ export default function Settle() {
             <Animated.View style={[{ position: 'absolute', alignSelf: 'center', top: -10, zIndex: 2 }, floatStyle]}><T v="h2" color={colors.mint}>+{rupees(cur.amount_paise)}</T></Animated.View>
             <Animated.View entering={ZoomIn.springify().damping(8)}><Avatar name={cur.to_name} index={4} size={76} ring="paid" /></Animated.View>
           </View>
-          <Chillar size={150} mood="cheer" />
+          <Mascot size={150} mood="cheer" />
           <T v="h1" center>Paid!</T>
           <T color={colors.inkSoft} center>{rupees(cur.amount_paise)} to {cur.to_name} is recorded.</T>
           <View style={{ alignSelf: 'stretch', gap: 10, marginTop: 20 }}>

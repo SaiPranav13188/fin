@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import Animated, { FadeInDown, LinearTransition } from 'react-native-reanimated';
 
-import { Chillar, Mood } from '@/components/Chillar';
+import { Mascot, Mood } from '@/components/Mascot';
 import { Btn, Field, Press, Screen, T } from '@/components/ui';
 import { ApiError, api } from '@/lib/api';
 import { useStore } from '@/lib/store';
@@ -22,7 +22,7 @@ export default function Login() {
   const [focus, setFocus] = useState<'none' | 'text' | 'password'>('none');
   const setTokens = useStore((s) => s.setTokens);
 
-  // Chillar covers its eyes while you type your password.
+  // Fin covers its eyes while you type your password.
   const mood: Mood = error ? 'worried' : focus === 'password' ? 'covering' : focus === 'text' ? 'happy' : 'idle';
   const speech = error ?? (focus === 'password' ? 'Not peeking, promise 🙈' : mode === 'signup' ? 'Nice to meet you!' : 'Welcome back!');
 
@@ -52,7 +52,7 @@ export default function Login() {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40, gap: 14 }}>
           <View style={{ alignItems: 'center', height: 190, justifyContent: 'flex-end' }}>
-            <Chillar size={112} mood={mood} speech={speech} />
+            <Mascot size={112} mood={mood} speech={speech} />
           </View>
           <T v="h1" center>{mode === 'signup' ? 'Create your account' : 'Log in'}</T>
           <Animated.View layout={LinearTransition.springify().damping(16)} style={{ gap: 12, marginTop: 8 }}>

@@ -1,5 +1,5 @@
 /**
- * Chillar: Fin's original mascot. A round coin with a sprout on top.
+ * Fin's mascot: a round coin with a sprout on top. Users know it simply as Fin.
  * One canonical character file, reused on every screen. All motion runs on the UI thread.
  */
 import React, { useEffect, useId } from 'react';
@@ -30,12 +30,12 @@ type Props = {
   /** -1..1 where the eyes should look. Drive these from a gesture or the gyroscope. */
   lookX?: SharedValue<number>;
   lookY?: SharedValue<number>;
-  /** Bumped by the parent to make Chillar hop (e.g. when a card changes). */
+  /** Bumped by the parent to make Fin hop (e.g. when a card changes). */
   hopKey?: number | string;
   speech?: string;
 };
 
-export function Chillar({ size = 120, mood = 'idle', prop = 'none', lookX, lookY, hopKey, speech }: Props) {
+export function Mascot({ size = 120, mood = 'idle', prop = 'none', lookX, lookY, hopKey, speech }: Props) {
   const reduce = useStore((s) => s.settings.reduceMotion);
   const uid = useId().replace(/[^a-zA-Z0-9]/g, '');
   const blink = useSharedValue(1); // eyelid: 1 open, 0 shut
@@ -214,7 +214,7 @@ export function Chillar({ size = 120, mood = 'idle', prop = 'none', lookX, lookY
             </G>
           ) : null}
           {mouth}
-          {/* paws: rise to cover the eyes when Chillar must not peek */}
+          {/* paws: rise to cover the eyes when Fin must not peek */}
           <ACircle r={9.5} fill="#FFD152" stroke={colors.coinDark} strokeWidth={2.4} animatedProps={pawL} />
           <ACircle r={9.5} fill="#FFD152" stroke={colors.coinDark} strokeWidth={2.4} animatedProps={pawR} />
           {/* feet */}

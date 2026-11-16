@@ -7,7 +7,7 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { FadeIn, FadeInDown, LinearTransition, ZoomIn, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
-import { Chillar, Mood, Prop } from '@/components/Chillar';
+import { Mascot, Mood, Prop } from '@/components/Mascot';
 import { Confetti, ScanBeam } from '@/components/fx';
 import { Avatar, Btn, Chip, Press, Screen, T } from '@/components/ui';
 import { ApiError, Draft, Item, api } from '@/lib/api';
@@ -189,7 +189,7 @@ export default function Scan() {
             {['tl', 'tr', 'bl', 'br'].map((c) => <View key={c} style={[styles.corner, c[0] === 't' ? { top: 14 } : { bottom: 14 }, c[1] === 'l' ? { left: 14 } : { right: 14 }]} />)}
           </View>
           <View style={{ alignItems: 'center' }}>
-            <Chillar size={90} mood={mood} prop={prop} speech={scanning ? 'Reading the bill…' : error ?? undefined} />
+            <Mascot size={90} mood={mood} prop={prop} speech={scanning ? 'Reading the bill…' : error ?? undefined} />
           </View>
           <View style={{ flex: 1 }} />
           <Btn title="Take a photo" icon="📸" onPress={() => pick(true)} disabled={scanning || !groupId} />
@@ -200,7 +200,7 @@ export default function Scan() {
         <View style={{ flex: 1 }}>
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingBottom: 16 }} keyboardShouldPersistTaps="handled" onScrollEndDrag={measure}>
             <Animated.View entering={FadeIn} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              <Chillar size={58} mood={mood} prop={prop} />
+              <Mascot size={58} mood={mood} prop={prop} />
               <View style={{ flex: 1 }}>
                 <T v="h3">{draft.description}</T>
                 <T v="small" color={colors.inkSoft}>{items.length} items · total {rupees(total)}{draft.tax_paise ? ` · incl. ${rupees(draft.tax_paise + (draft.tip_paise ?? 0))} tax & tip` : ''}</T>

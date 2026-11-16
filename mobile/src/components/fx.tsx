@@ -13,7 +13,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 import { useStore } from '@/lib/store';
 import { colorFor, colors, font, palette, radius, shadow, spring } from '@/lib/theme';
 import { haptic } from '@/lib/util';
-import { Chillar } from './Chillar';
+import { Mascot } from './Mascot';
 import { Press, T } from './ui';
 
 const { width: W, height: H } = Dimensions.get('window');
@@ -163,7 +163,7 @@ export function Keypad({ value, onChange }: { value: string; onChange: (v: strin
   );
 }
 
-// ---------------- Swipe to pay: Chillar is the thumb ----------------
+// ---------------- Swipe to pay: Fin is the thumb ----------------
 const TRACK_H = 68;
 export function SwipeToPay({ label, onDone, disabled }: { label: string; onDone: () => void; disabled?: boolean }) {
   const width = W - 40;
@@ -241,7 +241,7 @@ export function SwipeToPay({ label, onDone, disabled }: { label: string; onDone:
       </Animated.View>
       <GestureDetector gesture={pan}>
         <Animated.View style={[styles.thumb, thumb]}>
-          <View style={{ marginTop: -6 }}><Chillar size={50} mood={mood} /></View>
+          <View style={{ marginTop: -6 }}><Mascot size={50} mood={mood} /></View>
         </Animated.View>
       </GestureDetector>
     </Animated.View>

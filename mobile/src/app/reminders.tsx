@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import Animated, { FadeOut, LinearTransition } from 'react-native-reanimated';
 
-import { Chillar } from '@/components/Chillar';
+import { Mascot } from '@/components/Mascot';
 import { Btn, Card, Chip, Empty, Field, Press, Screen, Sheet, T } from '@/components/ui';
 import { ApiError, api } from '@/lib/api';
 import { queryClient } from '@/lib/hooks';
@@ -98,7 +98,7 @@ export default function Reminders() {
     <Screen title="Bills & subscriptions">
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 20, paddingBottom: 40 }}>
         {empty ? (
-          <Empty title="Nothing to remember yet" sub="Add rent, an EMI, or Netflix and Chillar will remind you before it's due."><Chillar size={120} mood="idle" /></Empty>
+          <Empty title="Nothing to remember yet" sub="Add rent, an EMI, or Netflix and Fin will remind you before it's due."><Mascot size={120} mood="idle" /></Empty>
         ) : null}
         {monthly ? <View style={{ backgroundColor: colors.purpleSoft, borderRadius: radius.lg, padding: 16 }}><T v="tiny" color={colors.inkSoft}>Subscriptions cost you</T><T v="h1">{rupees(monthly)} <T color={colors.inkSoft}>/ month</T></T></View> : null}
         {section('Bills & responsibilities', resp.data, '/responsibilities', '🏠')}
@@ -107,7 +107,7 @@ export default function Reminders() {
       <Sheet visible={!!sheet} onClose={() => setSheet(null)} title={sheet === 'sub' ? 'New subscription' : 'New bill'}>
         <View style={{ gap: 12 }}>
           <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8, minHeight: 84 }}>
-            <Chillar size={56} mood={label ? 'happy' : 'idle'} />
+            <Mascot size={56} mood={label ? 'happy' : 'idle'} />
             <View style={{ flex: 1, backgroundColor: '#fff', borderRadius: 18, borderBottomLeftRadius: 6, padding: 12 }}><T v="small" w="semi">{preview}</T></View>
           </View>
           <Field value={label} onChangeText={setLabel} placeholder={sheet === 'sub' ? 'Netflix, Spotify, gym…' : 'Rent, EMI, loan to Rahul…'} maxLength={60} />

@@ -9,7 +9,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Chillar, Mood } from '@/components/Chillar';
+import { Mascot, Mood } from '@/components/Mascot';
 import { Avatar, Card, Empty, Press, RollingNumber, Skeleton, T } from '@/components/ui';
 import { ApiError, api } from '@/lib/api';
 import { queryClient, refreshAll, useGroups, useMe, useReminders, useSummary } from '@/lib/hooks';
@@ -64,7 +64,7 @@ export default function Home() {
   const net = owed - owe;
   const hour = new Date().getHours();
   const dueSoon = (reminders.data ?? []).some((r) => r.kind !== 'split');
-  // Chillar's mood comes from real data: worried when a bill is due, happy when you're owed, sleepy at night.
+  // Fin's mood comes from real data: worried when a bill is due, happy when you're owed, sleepy at night.
   const dockMood: Mood = open ? 'excited' : hour >= 23 || hour < 6 ? 'sleepy' : dueSoon ? 'worried' : net > 0 ? 'happy' : 'sleepy';
 
   const cardTilt = useAnimatedStyle(() => ({
@@ -82,7 +82,7 @@ export default function Home() {
         if (!r.success) return;
       }
     } catch {}
-    // Chillar peeks over the card, glances at the number, then covers its eyes.
+    // Fin peeks over the card, glances at the number, then covers its eyes.
     setPeek('excited');
     setRevealed(true);
     setTimeout(() => setPeek('covering'), 900);
@@ -130,7 +130,7 @@ export default function Home() {
         <View>
           {peek ? (
             <Animated.View entering={FadeInDown.springify().damping(11)} exiting={FadeOut} style={{ position: 'absolute', right: 84, top: -60, zIndex: 0 }}>
-              <Chillar size={84} mood={peek} speech={peek === 'covering' ? 'Not peeking, promise 🙈' : undefined} />
+              <Mascot size={84} mood={peek} speech={peek === 'covering' ? 'Not peeking, promise 🙈' : undefined} />
             </Animated.View>
           ) : null}
           <Animated.View style={[{ borderRadius: radius.xl, ...shadow, shadowOpacity: 0.3 }, cardTilt]}>
@@ -183,9 +183,9 @@ export default function Home() {
             <Press onPress={() => router.push('/group/new')} style={styles.newBtn} label="New group"><T v="small" w="bold" color={colors.purple}>＋ New</T></Press>
           </View>
           {groups.isLoading ? [0, 1, 2].map((i) => <Skeleton key={i} h={76} />) : groups.isError ? (
-            <Empty title="Can't reach Fin" sub="Check your internet and pull down to try again."><Chillar size={90} mood="worried" prop="umbrella" /></Empty>
+            <Empty title="Can't reach Fin" sub="Check your internet and pull down to try again."><Mascot size={90} mood="worried" prop="umbrella" /></Empty>
           ) : groups.data!.length === 0 ? (
-            <Empty title="No groups yet" sub="Make one for your flat, a trip or your squad."><Chillar size={90} mood="idle" /></Empty>
+            <Empty title="No groups yet" sub="Make one for your flat, a trip or your squad."><Mascot size={90} mood="idle" /></Empty>
           ) : groups.data!.map((g, i) => (
             <Card key={g.id} index={i} style={{ padding: 0 }}>
               <Press onPress={() => router.push(`/group/${g.id}`)} scaleTo={0.97} style={styles.groupRow} label={g.name}>
@@ -220,11 +220,11 @@ export default function Home() {
         </Animated.View>
       ) : null}
 
-      {/* the dock: Chillar sleeps at the bottom edge; tap to wake */}
+      {/* the dock: Fin sleeps at the bottom edge; tap to wake */}
       <View style={[styles.dock, { bottom: insets.bottom + 8 }]} pointerEvents="box-none">
         {ACTIONS.map((a, i) => <DockAction key={a.key} i={i} open={open} emoji={a.emoji} label={a.label} onPress={() => go(a.go)} />)}
         <Press onPress={() => { haptic.bump(); setOpen(!open); }} scaleTo={0.9} label="Open actions">
-          <Chillar size={104} mood={dockMood} lookX={tilt.x} lookY={tilt.y} hopKey={open ? 1 : 0} />
+          <Mascot size={104} mood={dockMood} lookX={tilt.x} lookY={tilt.y} hopKey={open ? 1 : 0} />
         </Press>
       </View>
     </SafeAreaView>

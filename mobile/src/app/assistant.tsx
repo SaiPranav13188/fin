@@ -1,4 +1,4 @@
-/** Ask Fin: type or speak. Chillar acts out each agent step as it streams, then a draft card springs up. */
+/** Ask Fin: type or speak. Fin acts out each agent step as it streams, then a draft card springs up. */
 import { router, useLocalSearchParams } from 'expo-router';
 import { ExpoSpeechRecognitionModule, useSpeechRecognitionEvent } from 'expo-speech-recognition';
 import React, { useEffect, useRef, useState } from 'react';
@@ -9,7 +9,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Chillar, Mood, Prop } from '@/components/Chillar';
+import { Mascot, Mood, Prop } from '@/components/Mascot';
 import { Confetti } from '@/components/fx';
 import { Avatar, Btn, Chip, Dots, Press, T } from '@/components/ui';
 import { AgentEvent, ApiError, Draft, api, streamDraft } from '@/lib/api';
@@ -18,7 +18,7 @@ import { useStore } from '@/lib/store';
 import { CATEGORY, colors, font, radius, shadow, spring } from '@/lib/theme';
 import { haptic, rupees } from '@/lib/util';
 
-/** What Chillar holds while each agent works, so the user can see who is doing what. */
+/** What Fin holds while each agent works, so the user can see who is doing what. */
 const ACT: Record<string, { prop: Prop; mood: Mood }> = {
   orchestrator: { prop: 'none', mood: 'thinking' },
   expense_parser: { prop: 'glasses', mood: 'idle' },
@@ -163,7 +163,7 @@ export default function Assistant() {
       <Confetti fire={done} />
       <Animated.View entering={SlideInDown.springify().damping(18)} style={[styles.sheet, { paddingBottom: insets.bottom + 12 }]}>
         <View style={{ alignItems: 'center', height: 150, justifyContent: 'flex-end' }}>
-          <Chillar size={96} mood={mood} prop={act?.prop ?? 'none'} speech={speech} hopKey={step?.agent} />
+          <Mascot size={96} mood={mood} prop={act?.prop ?? 'none'} speech={speech} hopKey={step?.agent} />
         </View>
         {busy ? <View style={{ alignItems: 'center', marginTop: 8 }}><Dots /></View> : null}
 
