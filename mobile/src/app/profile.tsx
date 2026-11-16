@@ -9,6 +9,7 @@ import { queryClient, useMe } from '@/lib/hooks';
 import { Settings, useStore } from '@/lib/store';
 import { colors } from '@/lib/theme';
 import { haptic } from '@/lib/util';
+import { t } from '@/lib/i18n';
 
 
 
@@ -47,7 +48,7 @@ export default function Profile() {
       } },
     ]);
 
-  const toggle = (key: keyof Settings, label: string, sub: string) => (
+  const toggle = (key: 'haptics' | 'reduceMotion', label: string, sub: string) => (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
       <View style={{ flex: 1 }}><T w="bold">{label}</T><T v="small" color={colors.inkSoft}>{sub}</T></View>
       <Switch value={settings[key]} onValueChange={(v) => { setSetting(key, v); haptic.tick(); }} trackColor={{ true: colors.pink, false: colors.line }} thumbColor="#fff" />
@@ -55,29 +56,31 @@ export default function Profile() {
   );
 
   return (
-    <Screen title="You">
+    <Screen title={t("You")}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 16, paddingBottom: 50 }} keyboardShouldPersistTaps="handled">
         <View style={{ alignItems: 'center' }}><Mascot size={110} mood="happy" /></View>
         <Card style={{ gap: 12 }}>
-          <Field label="Name" value={name} onChangeText={setName} maxLength={80} />
-          <Field label="Your UPI ID (friends pay you here)" value={upi} onChangeText={setUpi} autoCapitalize="none" placeholder="name@okhdfcbank" />
+          <Field label={t("Name")} value={name} onChangeText={setName} maxLength={80} />
+          <Field label={t("Your UPI ID (friends pay you here)")} value={upi} onChangeText={setUpi} autoCapitalize="none" placeholder="name@okhdfcbank" />
           <T v="small" color={colors.inkSoft}>{me.data?.email}</T>
-          <Btn title="Save" kind="soft" loading={busy} onPress={() => save({ name: name.trim(), upi_id: upi.trim() || null })} />
+          <Btn title={t("Save")} kind="soft" loading={busy} onPress={() => save({ name: name.trim(), upi_id: upi.trim() || null })} />
         </Card>
         <Card index={1} style={{ gap: 12 }}>
-          <T v="tiny" color={colors.inkFaint}>Reminder language</T>
+          <T v="tiny" color={colors.inkFaint}>{t("App language")}</T>
           <View style={{ flexDirection: 'row', gap: 8 }}>
-            {([['en', 'English'], ['hi', 'हिंदी'], ['te', 'తెలుగు']] as const).map(([k, l]) => <Chip key={k} label={l} active={me.data?.language === k} onPress={() => save({ language: k })} />)}
+            {([['en', 'English'], ['hi', 'हिंदी'], ['te', 'తెలుగు']] as const).map(([k, l]) => (
+              <Chip key={k} label={l} active={settings.lang === k} onPress={() => { setSetting('lang', k); save({ language: k }); }} />
+            ))}
           </View>
         </Card>
         <Card index={2} style={{ gap: 16 }}>
-          {toggle('haptics', 'Haptics', 'Little taps as you swipe and pay')}
-          {toggle('reduceMotion', 'Reduce motion', 'Swap big animations for simple fades')}
+          {toggle('haptics', t('Haptics'), t("Little taps as you swipe and pay"))}
+          {toggle('reduceMotion', t("Reduce motion"), t("Swap big animations for simple fades"))}
         </Card>
-        <Btn title="Privacy policy" kind="ghost" onPress={() => Linking.openURL(`${API_URL}/privacy`)} />
-        <Btn title="Log out" kind="soft" onPress={logout} />
-        <Btn title="Delete my account" kind="danger" onPress={remove} />
-        <T v="small" color={colors.inkFaint} center>Fin splits and tracks bills and opens your own UPI app. It does not hold money, offer loans or process payments.</T>
+        <Btn title={t("Privacy policy")} kind="ghost" onPress={() => Linking.openURL(`${API_URL}/privacy`)} />
+        <Btn title={t("Log out")} kind="soft" onPress={logout} />
+        <Btn title={t("Delete my account")} kind="danger" onPress={remove} />
+        <T v="small" color={colors.inkFaint} center>{t("Fin splits and tracks bills and opens your own UPI app. It does not hold money, offer loans or process payments.")}</T>
       </ScrollView>
     </Screen>
   );

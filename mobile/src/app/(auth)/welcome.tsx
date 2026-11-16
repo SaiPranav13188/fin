@@ -13,6 +13,7 @@ import { Avatar, Btn, Press, T } from '@/components/ui';
 import { useStore } from '@/lib/store';
 import { colors, spring } from '@/lib/theme';
 import { haptic } from '@/lib/util';
+import { t } from '@/lib/i18n';
 
 const FRIENDS = ['You', 'Rahul', 'Priya', 'Arjun'];
 
@@ -70,17 +71,17 @@ export default function Welcome() {
               <View key={i} style={{ width: i === step ? 22 : 8, height: 8, borderRadius: 4, backgroundColor: i <= step ? colors.pink : colors.line }} />
             ))}
           </View>
-          {step < 3 ? <Press onPress={finish} label="Skip"><T v="small" w="bold" color={colors.inkSoft}>Skip</T></Press> : null}
+          {step < 3 ? <Press onPress={finish} label={t("Skip")}><T v="small" w="bold" color={colors.inkSoft}>{t("Skip")}</T></Press> : null}
         </View>
 
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 28, gap: 22 }}>
           {step === 0 ? (
             <Animated.View key="s0" entering={FadeIn} exiting={FadeOut} style={{ alignItems: 'center', gap: 22 }}>
               <Press onPress={() => { setMood('excited'); setTimeout(next, 700); }} scaleTo={0.9} label="Wake Fin">
-                <Mascot size={170} mood={mood} lookX={lookX} lookY={lookY} speech={mood === 'sleepy' ? 'zzz… tap me!' : 'Oh! Hello!'} />
+                <Mascot size={170} mood={mood} lookX={lookX} lookY={lookY} speech={mood === 'sleepy' ? t("zzz… tap me!") : 'Oh! Hello!'} />
               </Press>
-              <T v="h1" center>Meet Fin</T>
-              <T color={colors.inkSoft} center>Your tiny money buddy. Tap to wake it up. Drag your finger and watch its eyes.</T>
+              <T v="h1" center>{t("Meet Fin")}</T>
+              <T color={colors.inkSoft} center>{t("Your tiny money buddy. Tap to wake it up. Drag your finger and watch its eyes.")}</T>
             </Animated.View>
           ) : step === 1 ? (
             <Animated.View key="s1" entering={FadeInDown.springify()} exiting={FadeOut} style={{ alignItems: 'center', gap: 16 }}>
@@ -90,24 +91,24 @@ export default function Welcome() {
               <View style={{ flexDirection: 'row', gap: 4 }}>
                 {FRIENDS.slice(0, slices).map((n, i) => <Animated.View key={n} entering={FadeInDown.springify().damping(10)}><Avatar name={n} index={i} size={40} /></Animated.View>)}
               </View>
-              <T v="h1" center>Slice any bill</T>
+              <T v="h1" center>{t("Slice any bill")}</T>
               <T color={colors.inkSoft} center>{slices < 4 ? 'Tap the pizza to add a friend.' : 'Now tap once more to slice it!'}</T>
             </Animated.View>
           ) : step === 2 ? (
             <Animated.View key="s2" entering={FadeInDown.springify()} exiting={FadeOut} style={{ alignItems: 'center', gap: 22, width: '100%' }}>
               <Mascot size={120} mood={paid ? 'cheer' : 'happy'} prop="coin" lookX={lookX} lookY={lookY} />
-              <T v="h1" center>Swipe to settle</T>
-              <T color={colors.inkSoft} center>Fin opens your own UPI app with everything filled in. Fin never holds your money.</T>
-              <SwipeToPay label="Try a swipe" onDone={() => { setPaid(Date.now()); setTimeout(next, 1300); }} />
+              <T v="h1" center>{t("Swipe to settle")}</T>
+              <T color={colors.inkSoft} center>{t("Fin opens your own UPI app with everything filled in. Fin never holds your money.")}</T>
+              <SwipeToPay label={t("Try a swipe")} onDone={() => { setPaid(Date.now()); setTimeout(next, 1300); }} />
             </Animated.View>
           ) : (
             <Animated.View key="s3" entering={FadeInDown.springify()} style={{ alignItems: 'center', gap: 16, width: '100%' }}>
-              <Mascot size={160} mood="proud" lookX={lookX} lookY={lookY} speech="Let's split something!" />
+              <Mascot size={160} mood="proud" lookX={lookX} lookY={lookY} speech={t("Let's split something!")} />
               <T v="hero" center>Fin</T>
-              <T color={colors.inkSoft} center>Tell Fin what happened. It splits the bill, reminds your friends and helps you settle up.</T>
+              <T color={colors.inkSoft} center>{t("Tell Fin what happened. It splits the bill, reminds your friends and helps you settle up.")}</T>
               <View style={{ height: 8 }} />
-              <Btn title="Get started" onPress={finish} style={{ alignSelf: 'stretch' }} />
-              <Btn title="I already have an account" kind="ghost" onPress={() => router.push({ pathname: '/login', params: { mode: 'login' } })} />
+              <Btn title={t("Get started")} onPress={finish} style={{ alignSelf: 'stretch' }} />
+              <Btn title={t("I already have an account")} kind="ghost" onPress={() => router.push({ pathname: '/login', params: { mode: 'login' } })} />
             </Animated.View>
           )}
         </View>

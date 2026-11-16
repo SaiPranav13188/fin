@@ -17,6 +17,7 @@ import { refreshAll, useGroup, useGroups } from '@/lib/hooks';
 import { useStore } from '@/lib/store';
 import { CATEGORY, colors, font, radius, shadow, spring } from '@/lib/theme';
 import { haptic, rupees } from '@/lib/util';
+import { t } from '@/lib/i18n';
 
 /** What Fin holds while each agent works, so the user can see who is doing what. */
 const ACT: Record<string, { prop: Prop; mood: Mood }> = {
@@ -151,8 +152,8 @@ export default function Assistant() {
 
   const act = step ? ACT[step.agent] ?? ACT.orchestrator : null;
   const mood: Mood = done ? 'cheer' : error ? 'worried' : listening ? 'excited' : act ? act.mood : result?.kind === 'question' ? 'idle' : result ? 'happy' : 'idle';
-  const speech = done ? 'Saved!' : error ? error : listening ? "I'm listening…" : step ? step.label : result?.kind === 'question' ? result.question : !result ? 'Tell me what happened' : undefined;
-  const name = (id: string) => { const m = members.find((x) => x.id === id); return m ? (m.is_self ? 'You' : m.name.split(' ')[0]) : '?'; };
+  const speech = done ? t('Saved!') : error ? error : listening ? t("I'm listening…") : step ? step.label : result?.kind === 'question' ? result.question : !result ? t('Tell me what happened') : undefined;
+  const name = (id: string) => { const m = members.find((x) => x.id === id); return m ? (m.is_self ? t("You") : m.name.split(' ')[0]) : '?'; };
   const unsure = (field: string) => !!result?.questions?.some((q: any) => q.field === field);
 
   return (
@@ -205,7 +206,7 @@ export default function Assistant() {
               ))}
               <T v="tiny" color={colors.inkFaint} style={{ marginTop: 8 }}>{result.source === 'ai' ? '✨ Drafted by AI' : '⚡ Quick draft'} · nothing is saved until you confirm</T>
               <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
-                <Btn small title="Edit" kind="soft" style={{ flex: 1 }} onPress={() => router.replace({ pathname: '/add-expense', params: { draft: JSON.stringify(result) } })} />
+                <Btn small title={t("Edit")} kind="soft" style={{ flex: 1 }} onPress={() => router.replace({ pathname: '/add-expense', params: { draft: JSON.stringify(result) } })} />
                 {result.ready ? <Btn small title={`Split ${rupees(result.amount_paise)}`} style={{ flex: 1.4 }} loading={saving} onPress={() => confirmExpense(result)} /> : null}
               </View>
             </Animated.View>
@@ -215,7 +216,7 @@ export default function Assistant() {
           {result?.kind === 'question' && result.field === 'group' ? (
             <Animated.View entering={FadeInDown.springify()} style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
               {(groups.data ?? []).map((g) => <Chip key={g.id} label={g.name} emoji={g.emoji} onPress={() => { setGroupId(g.id); run(lastText.current, g.id); }} />)}
-              {groups.data?.length === 0 ? <Btn small title="Make a group first" onPress={() => router.replace('/group/new')} /> : null}
+              {groups.data?.length === 0 ? <Btn small title={t("Make a group first")} onPress={() => router.replace('/group/new')} /> : null}
             </Animated.View>
           ) : null}
 
@@ -224,9 +225,9 @@ export default function Assistant() {
             <Animated.View entering={FadeInDown.springify().damping(13)} style={styles.card}>
               <T v="h3">{result.summary}</T>
               {result.steps.slice(0, 4).map((s: any, i: number) => (
-                <T key={i} v="small" color={colors.inkSoft} style={{ marginTop: 4 }}>{s.mine ? 'You' : s.from_name} → {s.to_name}: {rupees(s.amount_paise)}</T>
+                <T key={i} v="small" color={colors.inkSoft} style={{ marginTop: 4 }}>{s.mine ? t("You") : s.from_name} → {s.to_name}: {rupees(s.amount_paise)}</T>
               ))}
-              {result.steps.length ? <Btn small title="Start settling" style={{ marginTop: 12 }} onPress={() => router.replace({ pathname: '/settle', params: { group: result.group_id } })} /> : null}
+              {result.steps.length ? <Btn small title={t("Start settling")} style={{ marginTop: 12 }} onPress={() => router.replace({ pathname: '/settle', params: { group: result.group_id } })} /> : null}
             </Animated.View>
           ) : null}
 
@@ -257,7 +258,7 @@ export default function Assistant() {
               <T v="h3">{result.answer}</T>
               {result.records?.slice(-1).map((r: any, i: number) => r.rows.length ? (
                 <View key={i} style={{ marginTop: 10, gap: 4 }}>
-                  <T v="tiny" color={colors.inkFaint}>From your records</T>
+                  <T v="tiny" color={colors.inkFaint}>{t("From your records")}</T>
                   {r.rows.slice(0, 5).map((row: any[], j: number) => (
                     <View key={j} style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                       {row.map((c, k) => <T key={k} v="small" color={colors.inkSoft}>{typeof c === 'number' ? rupees(Math.round(c * 100)) : String(c)}</T>)}

@@ -17,6 +17,7 @@ import { useStore } from '@/lib/store';
 import { colors, font, radius, shadow, spring } from '@/lib/theme';
 import { useTilt } from '@/lib/tilt';
 import { haptic, rupees } from '@/lib/util';
+import { t } from '@/lib/i18n';
 
 const ACTIONS = [
   { key: 'split', emoji: '🍕', label: 'Split', go: '/add-expense' },
@@ -41,7 +42,7 @@ function DockAction({ i, open, emoji, label, onPress }: { i: number; open: boole
       <Press onPress={onPress} style={styles.action} scaleTo={0.88} label={label}>
         <Text style={{ fontSize: 26 }}>{emoji}</Text>
       </Press>
-      <T v="small" w="bold" color="#fff">{label}</T>
+      <T v="small" w="bold" color="#fff">{t(label)}</T>
     </Animated.View>
   );
 }
@@ -101,7 +102,7 @@ export default function Home() {
       await api(`/reminders/${r.id}/${action}`, { method: 'POST' });
       queryClient.invalidateQueries({ queryKey: ['reminders'] });
     } catch (e) {
-      showToast(e instanceof ApiError ? e.message : 'Try again', 'warn');
+      showToast(e instanceof ApiError ? e.message : t("Try again"), 'warn');
     }
   };
 
@@ -120,7 +121,7 @@ export default function Home() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.pink} colors={[colors.pink, colors.purple]} />}>
         <Animated.View entering={FadeIn} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <View>
-            <T v="small" color={colors.inkSoft}>{hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'}</T>
+            <T v="small" color={colors.inkSoft}>{hour < 12 ? t("Good morning") : hour < 17 ? t("Good afternoon") : t("Good evening")}</T>
             <T v="h1">{me.data?.name?.split(' ')[0] ?? ' '}</T>
           </View>
           <Press onPress={() => router.push('/profile')} label="Profile"><Avatar name={me.data?.name ?? '?'} index={1} size={46} /></Press>
@@ -130,7 +131,7 @@ export default function Home() {
         <View>
           {peek ? (
             <Animated.View entering={FadeInDown.springify().damping(11)} exiting={FadeOut} style={{ position: 'absolute', right: 84, top: -60, zIndex: 0 }}>
-              <Mascot size={84} mood={peek} speech={peek === 'covering' ? 'Not peeking, promise 🙈' : undefined} />
+              <Mascot size={84} mood={peek} speech={peek === 'covering' ? t("Not peeking, promise 🙈") : undefined} />
             </Animated.View>
           ) : null}
           <Animated.View style={[{ borderRadius: radius.xl, ...shadow, shadowOpacity: 0.3 }, cardTilt]}>
@@ -138,7 +139,7 @@ export default function Home() {
               <LinearGradient colors={colors.grad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.balance}>
                 <Animated.View style={[styles.shine, shine]} />
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <T v="tiny" color="rgba(255,255,255,0.85)">{net >= 0 ? "Overall, you're owed" : 'Overall, you owe'}</T>
+                  <T v="tiny" color="rgba(255,255,255,0.85)">{net >= 0 ? t("Overall, you're owed") : t("Overall, you owe")}</T>
                   <T v="small" color="rgba(255,255,255,0.9)" w="bold">{revealed ? '🙈 Hide' : '👆 Tap to see'}</T>
                 </View>
                 {summary.isLoading ? <View style={{ height: 52 }} /> : revealed ? (
@@ -159,8 +160,8 @@ export default function Home() {
         {(reminders.data?.length ?? 0) > 0 ? (
           <Animated.View entering={FadeInDown.springify()} exiting={FadeOut} layout={LinearTransition.springify()} style={{ gap: 10 }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <T v="h3">Coming up</T>
-              <Press onPress={() => router.push('/reminders')}><T v="small" w="bold" color={colors.purple}>See all</T></Press>
+              <T v="h3">{t("Coming up")}</T>
+              <Press onPress={() => router.push('/reminders')}><T v="small" w="bold" color={colors.purple}>{t("See all")}</T></Press>
             </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -20 }} contentContainerStyle={{ paddingHorizontal: 20, gap: 10 }}>
               {reminders.data!.map((r, i) => (
@@ -168,8 +169,8 @@ export default function Home() {
                   <Text style={{ fontSize: 22 }}>{r.kind === 'subscription' ? '🔁' : r.kind === 'split' ? '💸' : '📅'}</Text>
                   <T v="small" w="semi" numberOfLines={3} style={{ flex: 1 }}>{r.message}</T>
                   <View style={{ flexDirection: 'row', gap: 12 }}>
-                    <Press onPress={() => act(r, 'done')}><T v="small" w="bold" color={colors.mint}>Done</T></Press>
-                    <Press onPress={() => act(r, 'dismiss')}><T v="small" w="bold" color={colors.inkFaint}>Later</T></Press>
+                    <Press onPress={() => act(r, 'done')}><T v="small" w="bold" color={colors.mint}>{t("Done")}</T></Press>
+                    <Press onPress={() => act(r, 'dismiss')}><T v="small" w="bold" color={colors.inkFaint}>{t("Later")}</T></Press>
                   </View>
                 </Animated.View>
               ))}
@@ -179,13 +180,13 @@ export default function Home() {
 
         <Animated.View layout={LinearTransition.springify()} style={{ gap: 12 }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <T v="h3">Your groups</T>
-            <Press onPress={() => router.push('/group/new')} style={styles.newBtn} label="New group"><T v="small" w="bold" color={colors.purple}>＋ New</T></Press>
+            <T v="h3">{t("Your groups")}</T>
+            <Press onPress={() => router.push('/group/new')} style={styles.newBtn} label={t("New group")}><T v="small" w="bold" color={colors.purple}>{t("＋ New")}</T></Press>
           </View>
           {groups.isLoading ? [0, 1, 2].map((i) => <Skeleton key={i} h={76} />) : groups.isError ? (
-            <Empty title="Can't reach Fin" sub="Check your internet and pull down to try again."><Mascot size={90} mood="worried" prop="umbrella" /></Empty>
+            <Empty title={t("Can't reach Fin")} sub={t("Check your internet and pull down to try again.")}><Mascot size={90} mood="worried" prop="umbrella" /></Empty>
           ) : groups.data!.length === 0 ? (
-            <Empty title="No groups yet" sub="Make one for your flat, a trip or your squad."><Mascot size={90} mood="idle" /></Empty>
+            <Empty title={t("No groups yet")} sub={t("Make one for your flat, a trip or your squad.")}><Mascot size={90} mood="idle" /></Empty>
           ) : groups.data!.map((g, i) => (
             <Card key={g.id} index={i} style={{ padding: 0 }}>
               <Press onPress={() => router.push(`/group/${g.id}`)} scaleTo={0.97} style={styles.groupRow} label={g.name}>
@@ -195,9 +196,9 @@ export default function Home() {
                   <T v="small" color={colors.inkSoft}>{g.members.length} people</T>
                 </View>
                 <View style={{ alignItems: 'flex-end' }}>
-                  {g.my_balance_paise === 0 ? <T v="small" w="bold" color={colors.mint}>Square ✓</T> : (
+                  {g.my_balance_paise === 0 ? <T v="small" w="bold" color={colors.mint}>{t("Square ✓")}</T> : (
                     <>
-                      <T v="tiny" color={colors.inkFaint}>{g.my_balance_paise > 0 ? 'you get' : 'you owe'}</T>
+                      <T v="tiny" color={colors.inkFaint}>{g.my_balance_paise > 0 ? t("you get") : t("you owe")}</T>
                       <T v="h3" color={g.my_balance_paise > 0 ? colors.mint : colors.coral}>{rupees(Math.abs(g.my_balance_paise))}</T>
                     </>
                   )}
@@ -206,8 +207,8 @@ export default function Home() {
             </Card>
           ))}
           <View style={{ flexDirection: 'row', gap: 12 }}>
-            <Press onPress={() => router.push('/insights')} style={[styles.tile, { backgroundColor: colors.purpleSoft }]}><Text style={{ fontSize: 24 }}>📊</Text><T v="small" w="bold">Insights</T></Press>
-            <Press onPress={() => router.push('/reminders')} style={[styles.tile, { backgroundColor: colors.amberSoft }]}><Text style={{ fontSize: 24 }}>📅</Text><T v="small" w="bold">Bills & subs</T></Press>
+            <Press onPress={() => router.push('/insights')} style={[styles.tile, { backgroundColor: colors.purpleSoft }]}><Text style={{ fontSize: 24 }}>📊</Text><T v="small" w="bold">{t("Insights")}</T></Press>
+            <Press onPress={() => router.push('/reminders')} style={[styles.tile, { backgroundColor: colors.amberSoft }]}><Text style={{ fontSize: 24 }}>📅</Text><T v="small" w="bold">{t("Bills & subs")}</T></Press>
           </View>
         </Animated.View>
       </ScrollView>

@@ -11,6 +11,7 @@ import { refreshAll } from '@/lib/hooks';
 import { useStore } from '@/lib/store';
 import { colors, font, radius, shadow, spring } from '@/lib/theme';
 import { haptic } from '@/lib/util';
+import { t } from '@/lib/i18n';
 
 const EMOJIS = ['🍕', '🏠', '🏖️', '🎉', '🚗', '🎬', '🏏', '🍻', '🎓', '💼'];
 const FUN_NAMES = ['Paisa Vasool Gang', 'The Bill Busters', 'Chai Sutta Squad', 'Udhaar Club', 'Flat 302 Legends', 'Goa Plan (Finally)', 'Split Happens', 'Hisaab Barabar', 'Maggi at Midnight', 'No Free Lunch'];
@@ -54,7 +55,7 @@ export default function NewGroup() {
       await refreshAll();
       router.replace(`/group/${g.id}`);
     } catch (e) {
-      showToast(e instanceof ApiError ? e.message : 'Try again', 'warn');
+      showToast(e instanceof ApiError ? e.message : t("Try again"), 'warn');
     } finally {
       setBusy(false);
     }
@@ -63,7 +64,7 @@ export default function NewGroup() {
   const seats = [{ name: 'You' }, ...friends];
   const R = 104;
   return (
-    <Screen title="New group">
+    <Screen title={t("New group")}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 16, paddingBottom: 30 }}>
           {/* the huddle */}
@@ -87,14 +88,14 @@ export default function NewGroup() {
           {/* Fin's sign */}
           <View style={{ alignItems: 'center', marginTop: -6 }}>
             <Animated.View style={[{ backgroundColor: '#fff', borderRadius: radius.md, paddingHorizontal: 18, paddingVertical: 10, borderWidth: 2.5, borderColor: colors.ink, minWidth: 190, alignItems: 'center' }, sign]}>
-              <Text numberOfLines={1} style={{ fontFamily: font.extra, fontSize: 17, color: name ? colors.ink : colors.inkFaint }}>{name || 'Name me!'}</Text>
+              <Text numberOfLines={1} style={{ fontFamily: font.extra, fontSize: 17, color: name ? colors.ink : colors.inkFaint }}>{name || t("Name me!")}</Text>
             </Animated.View>
             <View style={{ width: 4, height: 14, backgroundColor: colors.ink }} />
             <View style={{ marginTop: -8 }}><Mascot size={72} mood={friends.length ? 'happy' : 'idle'} hopKey={friends.length} /></View>
           </View>
 
           <View style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-end' }}>
-            <View style={{ flex: 1 }}><Field label="Group name" value={name} onChangeText={setName} placeholder="Goa trip" maxLength={60} /></View>
+            <View style={{ flex: 1 }}><Field label={t("Group name")} value={name} onChangeText={setName} placeholder="Goa trip" maxLength={60} /></View>
             <Press onPress={() => { haptic.bump(); setName(FUN_NAMES[Math.floor(Math.random() * FUN_NAMES.length)]); }} style={{ width: 54, height: 54, borderRadius: radius.md, backgroundColor: colors.purpleSoft, alignItems: 'center', justifyContent: 'center' }} label="Roll a fun name">
               <Text style={{ fontSize: 24 }}>🎲</Text>
             </Press>
@@ -103,23 +104,23 @@ export default function NewGroup() {
             {EMOJIS.map((e) => <Chip key={e} label={e} active={e === emoji} onPress={() => setEmoji(e)} />)}
           </ScrollView>
 
-          <T v="h3" style={{ marginTop: 6 }}>Add friends</T>
-          <T v="small" color={colors.inkSoft} style={{ marginTop: -10 }}>They don't need the app. Long-press a face to remove it.</T>
+          <T v="h3" style={{ marginTop: 6 }}>{t("Add friends")}</T>
+          <T v="small" color={colors.inkSoft} style={{ marginTop: -10 }}>{t("They don't need the app. Long-press a face to remove it.")}</T>
           <View style={{ flexDirection: 'row', gap: 10 }}>
             <View style={{ flex: 1 }}>
-              <TextInput value={fname} onChangeText={setFname} placeholder="Name" placeholderTextColor={colors.inkFaint} onSubmitEditing={addFriend} returnKeyType="done" maxLength={40}
+              <TextInput value={fname} onChangeText={setFname} placeholder={t("Name")} placeholderTextColor={colors.inkFaint} onSubmitEditing={addFriend} returnKeyType="done" maxLength={40}
                 style={{ height: 54, borderRadius: radius.md, borderWidth: 1.5, borderColor: colors.line, backgroundColor: '#FBF6FD', paddingHorizontal: 16, fontFamily: font.semi, fontSize: 15.5, color: colors.ink }} />
             </View>
-            <Btn title="Add" kind="soft" onPress={addFriend} />
+            <Btn title={t("Add")} kind="soft" onPress={addFriend} />
           </View>
-          <Field value={fupi} onChangeText={setFupi} placeholder="Their UPI ID (optional)" autoCapitalize="none" error={upiBad ? "That doesn't look like a UPI ID" : null} />
+          <Field value={fupi} onChangeText={setFupi} placeholder={t("Their UPI ID (optional)")} autoCapitalize="none" error={upiBad ? "That doesn't look like a UPI ID" : null} />
           {fupi.trim() && !upiBad ? (
             <View style={{ backgroundColor: colors.amberSoft, borderRadius: radius.md, padding: 12, flexDirection: 'row', gap: 10, alignItems: 'center' }}>
               <Text style={{ fontSize: 20 }}>🛡️</Text>
-              <T v="small" style={{ flex: 1 }}>Fin can't verify this UPI ID. Check the name in your UPI app the first time you pay.</T>
+              <T v="small" style={{ flex: 1 }}>{t("Fin can't verify this UPI ID. Check the name in your UPI app the first time you pay.")}</T>
             </View>
           ) : null}
-          <Btn title="Create group" onPress={create} loading={busy} style={{ marginTop: 8 }} />
+          <Btn title={t("Create group")} onPress={create} loading={busy} style={{ marginTop: 8 }} />
         </ScrollView>
       </KeyboardAvoidingView>
     </Screen>

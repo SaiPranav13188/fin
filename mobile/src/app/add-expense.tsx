@@ -14,6 +14,7 @@ import { refreshAll, useExpenses, useGroup, useGroups } from '@/lib/hooks';
 import { useStore } from '@/lib/store';
 import { CATEGORY, colorFor, colors, font, radius, shadow, spring } from '@/lib/theme';
 import { allocate, evalAmount, haptic, rupees } from '@/lib/util';
+import { t } from '@/lib/i18n';
 
 type SplitType = 'equal' | 'exact' | 'shares' | 'percent';
 const TYPES: { key: SplitType; label: string }[] = [
@@ -133,7 +134,7 @@ export default function AddExpense() {
 
   if (step === 'amount') {
     return (
-      <Screen title="Add expense">
+      <Screen title={t("Add expense")}>
         <View style={{ flex: 1, justifyContent: 'space-between', paddingBottom: 16 }}>
           <View style={{ gap: 14 }}>
             {(groups.data?.length ?? 0) > 1 ? (
@@ -159,21 +160,21 @@ export default function AddExpense() {
             <Animated.View layout={LinearTransition.springify().damping(15)} style={{ alignItems: 'center', gap: 10 }}>
               {noteOpen ? (
                 <Animated.View entering={FadeIn} style={{ alignSelf: 'stretch', gap: 10 }}>
-                  <TextInput autoFocus={!draft} value={desc} onChangeText={setDesc} placeholder="What was it for?" placeholderTextColor={colors.inkFaint} maxLength={60} style={styles.note} />
+                  <TextInput autoFocus={!draft} value={desc} onChangeText={setDesc} placeholder={t("What was it for?")} placeholderTextColor={colors.inkFaint} maxLength={60} style={styles.note} />
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }} keyboardShouldPersistTaps="handled">
                     {Object.entries(CATEGORY).filter(([k, c]) => !desc || k === category || c.label.toLowerCase().includes(desc.toLowerCase())).map(([k, c]) => (
-                      <Chip key={k} label={c.label} emoji={c.emoji} active={k === category} onPress={() => setCategory(k)} />
+                      <Chip key={k} label={t(c.label)} emoji={c.emoji} active={k === category} onPress={() => setCategory(k)} />
                     ))}
                   </ScrollView>
                 </Animated.View>
               ) : (
-                <Press onPress={() => setNoteOpen(true)} style={styles.notePill}><T v="small" w="bold" color={colors.purple}>＋ Add a note</T></Press>
+                <Press onPress={() => setNoteOpen(true)} style={styles.notePill}><T v="small" w="bold" color={colors.purple}>{t("＋ Add a note")}</T></Press>
               )}
             </Animated.View>
           </View>
           <View style={{ gap: 12 }}>
             <Keypad value={expr} onChange={setExpr} />
-            <Btn title="Next: who's splitting?" onPress={() => { if (!total) return haptic.warn(); setStep('split'); }} disabled={!total} />
+            <Btn title={t("Next: who's splitting?")} onPress={() => { if (!total) return haptic.warn(); setStep('split'); }} disabled={!total} />
           </View>
         </View>
       </Screen>
@@ -181,29 +182,29 @@ export default function AddExpense() {
   }
 
   return (
-    <Screen title={sliced ? 'Sliced!' : 'Split it'}>
+    <Screen title={sliced ? t("Sliced!") : t("Split it")}>
       <Confetti fire={sliced} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 14, paddingBottom: 30 }} keyboardShouldPersistTaps="handled">
         <View style={{ alignItems: 'center' }}>
           <PizzaChart values={members.map((m) => shares[m.id] ?? 0)} size={176} burst={burst} />
           <View style={{ position: 'absolute', right: 0, bottom: -6 }}>
-            <Mascot size={74} mood={judge} speech={sliced ? 'Sliced!' : problem && total ? problem : undefined} />
+            <Mascot size={74} mood={judge} speech={sliced ? t("Sliced!") : problem && total ? problem : undefined} />
           </View>
           <Press onPress={() => setStep('amount')} style={{ position: 'absolute', left: 0, top: 6 }} label="Change amount">
-            <T v="tiny" color={colors.inkFaint}>total</T>
+            <T v="tiny" color={colors.inkFaint}>{t("total")}</T>
             <T v="h2">{rupees(total)}</T>
-            <T v="small" w="bold" color={colors.purple}>Edit</T>
+            <T v="small" w="bold" color={colors.purple}>{t("Edit")}</T>
           </Press>
         </View>
 
         <View style={styles.block}>
-          <T v="tiny" color={colors.inkFaint}>Paid by</T>
+          <T v="tiny" color={colors.inkFaint}>{t("Paid by")}</T>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
             {members.map((m, i) => (
               <Press key={m.id} onPress={() => { haptic.tick(); setPayer(m.id); }} label={m.name}>
                 <View style={{ alignItems: 'center', width: 58 }}>
                   <Avatar name={m.name} index={i} size={40} selected={m.id === payerId} />
-                  <T v="tiny" numberOfLines={1} style={{ textTransform: 'none', letterSpacing: 0 }} color={m.id === payerId ? colors.purple : colors.inkSoft}>{m.is_self ? 'You' : m.name.split(' ')[0]}</T>
+                  <T v="tiny" numberOfLines={1} style={{ textTransform: 'none', letterSpacing: 0 }} color={m.id === payerId ? colors.purple : colors.inkSoft}>{m.is_self ? t("You") : m.name.split(' ')[0]}</T>
                 </View>
               </Press>
             ))}
@@ -211,7 +212,7 @@ export default function AddExpense() {
         </View>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-          {TYPES.map((t) => <Chip key={t.key} label={t.label} active={type === t.key} onPress={() => { haptic.tap(); setType(t.key); setVals({}); }} />)}
+          {TYPES.map((ty) => <Chip key={ty.key} label={t(ty.label)} active={type === ty.key} onPress={() => { haptic.tap(); setType(ty.key); setVals({}); }} />)}
         </ScrollView>
 
         <Animated.View style={[styles.block, shakeStyle]} layout={LinearTransition.springify()}>
@@ -222,11 +223,11 @@ export default function AddExpense() {
                 <Press onPress={() => toggle(m.id)} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }} label={`${m.name} ${on ? 'included' : 'left out'}`}>
                   <View style={{ opacity: on ? 1 : 0.35 }}><Avatar name={m.name} index={i} size={38} /></View>
                   <View style={{ flex: 1 }}>
-                    <T w="semi" color={on ? colors.ink : colors.inkFaint} numberOfLines={1}>{m.is_self ? 'You' : m.name}</T>
+                    <T w="semi" color={on ? colors.ink : colors.inkFaint} numberOfLines={1}>{m.is_self ? t("You") : m.name}</T>
                     {on && type !== 'equal' && type !== 'exact' ? <T v="small" color={colorFor(i)}>{rupees(shares[m.id] ?? 0)}</T> : null}
                   </View>
                 </Press>
-                {!on ? <T v="small" color={colors.inkFaint}>skipped</T> : type === 'equal' ? (
+                {!on ? <T v="small" color={colors.inkFaint}>{t("skipped")}</T> : type === 'equal' ? (
                   <Animated.View entering={ZoomIn.springify()}><T v="h3" color={colorFor(i)}>{rupees(shares[m.id] ?? 0)}</T></Animated.View>
                 ) : (
                   <View style={styles.mini}>

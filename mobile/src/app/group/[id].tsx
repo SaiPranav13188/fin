@@ -15,6 +15,7 @@ import { useStore } from '@/lib/store';
 import { CATEGORY, colors, font, radius, shadow, spring } from '@/lib/theme';
 import { useTilt } from '@/lib/tilt';
 import { haptic, rupees, timeAgo } from '@/lib/util';
+import { t } from '@/lib/i18n';
 
 function SplitCard({ e, members, net, onDelete, onSettle, onNudge, onOpen }: { e: Expense; members: Member[]; net: Record<string, number>; onDelete: () => void; onSettle: () => void; onNudge: (m: Member) => void; onOpen: () => void }) {
   const x = useSharedValue(0);
@@ -48,8 +49,8 @@ function SplitCard({ e, members, net, onDelete, onSettle, onNudge, onOpen }: { e
 
   return (
     <View>
-      <Animated.View style={[styles.hint, { left: 16 }, left]}><T v="small" w="bold" color={colors.mint}>🤝 Settle</T></Animated.View>
-      <Animated.View style={[styles.hint, { right: 16 }, right]}><T v="small" w="bold" color={colors.coral}>Delete 🗑️</T></Animated.View>
+      <Animated.View style={[styles.hint, { left: 16 }, left]}><T v="small" w="bold" color={colors.mint}>{t("🤝 Settle")}</T></Animated.View>
+      <Animated.View style={[styles.hint, { right: 16 }, right]}><T v="small" w="bold" color={colors.coral}>{t("Delete 🗑️")}</T></Animated.View>
       <GestureDetector gesture={pan}>
         <Animated.View style={[styles.split, card]}>
           <Press onPress={onOpen} scaleTo={0.98} style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }} label={`Open ${e.description}`}>
@@ -58,7 +59,7 @@ function SplitCard({ e, members, net, onDelete, onSettle, onNudge, onOpen }: { e
             </View>
             <View style={{ flex: 1 }}>
               <T v="h3" numberOfLines={1}>{cat.emoji} {e.description}</T>
-              <T v="small" color={colors.inkSoft} numberOfLines={1}>{payer?.is_self ? 'You' : payer?.name ?? 'Someone'} paid · {timeAgo(e.created_at)}{e.created_via !== 'manual' ? ' · ✨' : ''}</T>
+              <T v="small" color={colors.inkSoft} numberOfLines={1}>{payer?.is_self ? t("You") : payer?.name ?? 'Someone'} paid · {timeAgo(e.created_at)}{e.created_via !== 'manual' ? ' · ✨' : ''}</T>
             </View>
             <T v="h2">{rupees(e.amount_paise)}</T>
           </Press>
@@ -80,7 +81,7 @@ function SplitCard({ e, members, net, onDelete, onSettle, onNudge, onOpen }: { e
           </View>
           <View style={{ marginTop: 10, gap: 6 }}>
             <Progress value={settled.length / Math.max(people.length, 1)} />
-            <T v="small" color={colors.inkSoft}>{settled.length === people.length ? 'All settled 🎉' : `${settled.length} of ${people.length} settled · long-press a face to nudge`}</T>
+            <T v="small" color={colors.inkSoft}>{settled.length === people.length ? t("All settled 🎉") : `${settled.length} of ${people.length} settled · long-press a face to nudge`}</T>
           </View>
         </Animated.View>
       </GestureDetector>
@@ -224,7 +225,7 @@ export default function GroupScreen() {
     if (item.kind === 'settle_card') {
       return (
         <Animated.View entering={FadeInDown.springify()} style={styles.system}>
-          <T v="small" w="semi" color={colors.mint}>✓ {mine ? 'You' : sender?.name ?? 'Someone'} recorded a payment</T>
+          <T v="small" w="semi" color={colors.mint}>✓ {mine ? t("You") : sender?.name ?? 'Someone'} recorded a payment</T>
         </Animated.View>
       );
     }
@@ -244,11 +245,11 @@ export default function GroupScreen() {
       <Confetti fire={celebrate} coins />
       <View style={styles.summary}>
         <View style={{ flex: 1 }}>
-          <T v="tiny" color={colors.inkFaint}>{myNet === 0 ? 'in this group' : myNet > 0 ? 'you get back' : 'you owe'}</T>
-          <T v="h2" color={myNet === 0 ? colors.mint : myNet > 0 ? colors.mint : colors.coral}>{myNet === 0 ? "You're square ✓" : rupees(Math.abs(myNet))}</T>
+          <T v="tiny" color={colors.inkFaint}>{myNet === 0 ? t("in this group") : myNet > 0 ? t("you get back") : t("you owe")}</T>
+          <T v="h2" color={myNet === 0 ? colors.mint : myNet > 0 ? colors.mint : colors.coral}>{myNet === 0 ? t("You're square ✓") : rupees(Math.abs(myNet))}</T>
         </View>
-        <Btn small title="Settle" kind="soft" icon="🤝" onPress={() => router.push({ pathname: '/settle', params: { group: id } })} disabled={balances.data?.all_settled ?? true} />
-        <Btn small title="Add" icon="＋" onPress={() => router.push({ pathname: '/add-expense', params: { group: id } })} />
+        <Btn small title={t("Settle")} kind="soft" icon="🤝" onPress={() => router.push({ pathname: '/settle', params: { group: id } })} disabled={balances.data?.all_settled ?? true} />
+        <Btn small title={t("Add")} icon="＋" onPress={() => router.push({ pathname: '/add-expense', params: { group: id } })} />
       </View>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}>
         {messages.isLoading ? <View style={{ padding: 20, gap: 12 }}><Skeleton h={150} /><Skeleton h={150} /></View> : (
@@ -261,18 +262,18 @@ export default function GroupScreen() {
             onContentSizeChange={() => list.current?.scrollToEnd({ animated: true })}
             showsVerticalScrollIndicator={false}
             ListEmptyComponent={
-              <Empty title="Nothing here yet" sub="Add the first expense, or just type “I paid 600 for pizza”."><Mascot size={110} mood="idle" /></Empty>
+              <Empty title={t("Nothing here yet")} sub={t("Add the first expense, or just type “I paid 600 for pizza”.")}><Mascot size={110} mood="idle" /></Empty>
             }
           />
         )}
         <View style={[styles.composer, { paddingBottom: insets.bottom + 8 }]}>
-          <Press onPress={() => router.push({ pathname: '/assistant', params: { group: id } })} style={styles.spark} label="Ask Fin"><Text style={{ fontSize: 20 }}>✨</Text></Press>
-          <TextInput value={text} onChangeText={setText} placeholder="Message, or “I paid 600 for pizza”" placeholderTextColor={colors.inkFaint} style={styles.input} onSubmitEditing={send} returnKeyType="send" maxLength={500} />
+          <Press onPress={() => router.push({ pathname: '/assistant', params: { group: id } })} style={styles.spark} label={t("Ask Fin")}><Text style={{ fontSize: 20 }}>✨</Text></Press>
+          <TextInput value={text} onChangeText={setText} placeholder={t("Message, or “I paid 600 for pizza”")} placeholderTextColor={colors.inkFaint} style={styles.input} onSubmitEditing={send} returnKeyType="send" maxLength={500} />
           <Press onPress={send} style={[styles.spark, { backgroundColor: colors.purple }]} disabled={!text.trim()} label="Send"><Text style={{ fontSize: 18, color: '#fff', fontFamily: font.extra }}>↑</Text></Press>
         </View>
       </KeyboardAvoidingView>
 
-      <Sheet visible={menu} onClose={() => setMenu(false)} title="Group">
+      <Sheet visible={menu} onClose={() => setMenu(false)} title={t("Group")}>
         <View style={{ gap: 10 }}>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4 }}>
             {members.map((m, i) => (
@@ -280,19 +281,19 @@ export default function GroupScreen() {
                 onPress={m.is_self || m.verified ? undefined : () => { setMenu(false); setUpi(m.upi_id ?? ''); setTimeout(() => setEditing(m), 250); }}>
                 <View style={{ alignItems: 'center', width: 66, opacity: 1 }}>
                   <Avatar name={m.name} index={i} size={42} />
-                  <T v="tiny" numberOfLines={1} style={{ textTransform: 'none', letterSpacing: 0 }}>{m.is_self ? 'You' : m.name}</T>
+                  <T v="tiny" numberOfLines={1} style={{ textTransform: 'none', letterSpacing: 0 }}>{m.is_self ? t("You") : m.name}</T>
                   <T v="tiny" color={m.upi_id ? colors.mint : colors.amber} style={{ textTransform: 'none', letterSpacing: 0 }}>{m.upi_id ? 'UPI ✓' : m.is_self ? 'no UPI' : 'add UPI'}</T>
                 </View>
               </Press>
             ))}
           </View>
           <View style={{ flexDirection: 'row', gap: 8 }}>
-            <View style={{ flex: 1 }}><Field value={friend} onChangeText={setFriend} placeholder="Add a friend by name" maxLength={40} onSubmitEditing={addFriend} returnKeyType="done" /></View>
-            <Btn title="Add" kind="soft" onPress={addFriend} loading={saving} disabled={!friend.trim()} />
+            <View style={{ flex: 1 }}><Field value={friend} onChangeText={setFriend} placeholder={t("Add a friend by name")} maxLength={40} onSubmitEditing={addFriend} returnKeyType="done" /></View>
+            <Btn title={t("Add")} kind="soft" onPress={addFriend} loading={saving} disabled={!friend.trim()} />
           </View>
-          <Btn title="Invite with a link" kind="soft" icon="🔗" onPress={invite} />
-          <Btn title="Scan a bill" kind="soft" icon="🧾" onPress={() => { setMenu(false); router.push({ pathname: '/scan', params: { group: id } }); }} />
-          <Btn title="Export as CSV" kind="soft" icon="📄" onPress={async () => {
+          <Btn title={t("Invite with a link")} kind="soft" icon="🔗" onPress={invite} />
+          <Btn title={t("Scan a bill")} kind="soft" icon="🧾" onPress={() => { setMenu(false); router.push({ pathname: '/scan', params: { group: id } }); }} />
+          <Btn title={t("Export as CSV")} kind="soft" icon="📄" onPress={async () => {
             setMenu(false);
             try {
               const rows = (expenses.data ?? []).map((e) => `${e.spent_on}, ${e.description}, ${rupees(e.amount_paise)}`).join('\n');
@@ -306,7 +307,7 @@ export default function GroupScreen() {
         <View style={{ gap: 12 }}>
           <T v="small" color={colors.inkSoft}>You need this to pay {editing?.name} from Fin. Ask them for it, and check the name in your UPI app the first time you pay.</T>
           <Field value={upi} onChangeText={setUpi} placeholder="name@okhdfcbank" autoCapitalize="none" autoCorrect={false} />
-          <Btn title="Save" onPress={saveUpi} loading={saving} />
+          <Btn title={t("Save")} onPress={saveUpi} loading={saving} />
         </View>
       </Sheet>
 
@@ -321,27 +322,27 @@ export default function GroupScreen() {
               <T v="tiny" color={colors.inkFaint}>{detail.split_type === 'itemised' ? 'by item' : detail.split_type === 'equal' ? 'split equally' : `by ${detail.split_type}`}</T>
             </View>
             <View style={styles.box}>
-              <T v="tiny" color={colors.inkFaint}>Paid by</T>
+              <T v="tiny" color={colors.inkFaint}>{t("Paid by")}</T>
               {Object.entries(detail.payers).map(([mid, amt]) => {
                 const m = members.find((x) => x.id === mid);
-                return <View key={mid} style={styles.line}><T w="semi">{m?.is_self ? 'You' : m?.name ?? 'Former member'}</T><T w="bold">{rupees(amt)}</T></View>;
+                return <View key={mid} style={styles.line}><T w="semi">{m?.is_self ? t("You") : m?.name ?? 'Former member'}</T><T w="bold">{rupees(amt)}</T></View>;
               })}
             </View>
             <View style={styles.box}>
-              <T v="tiny" color={colors.inkFaint}>Each person's share</T>
+              <T v="tiny" color={colors.inkFaint}>{t("Each person's share")}</T>
               {Object.entries(detail.shares).map(([mid, amt]) => {
                 const m = members.find((x) => x.id === mid);
-                return <View key={mid} style={styles.line}><T w="semi">{m?.is_self ? 'You' : m?.name ?? 'Former member'}</T><T w="bold">{rupees(amt)}</T></View>;
+                return <View key={mid} style={styles.line}><T w="semi">{m?.is_self ? t("You") : m?.name ?? 'Former member'}</T><T w="bold">{rupees(amt)}</T></View>;
               })}
             </View>
             {detail.items.length ? (
               <View style={styles.box}>
-                <T v="tiny" color={colors.inkFaint}>Items</T>
+                <T v="tiny" color={colors.inkFaint}>{t("Items")}</T>
                 {detail.items.map((it, i) => (
                   <View key={i} style={styles.line}>
                     <View style={{ flex: 1 }}>
                       <T w="semi" numberOfLines={1}>{it.name}</T>
-                      <T v="small" color={colors.inkSoft} numberOfLines={1}>{it.member_ids.map((mid) => { const m = members.find((x) => x.id === mid); return m?.is_self ? 'You' : m?.name.split(' ')[0] ?? '?'; }).join(', ')}</T>
+                      <T v="small" color={colors.inkSoft} numberOfLines={1}>{it.member_ids.map((mid) => { const m = members.find((x) => x.id === mid); return m?.is_self ? t("You") : m?.name.split(' ')[0] ?? '?'; }).join(', ')}</T>
                     </View>
                     <T w="bold">{rupees(it.amount_paise)}</T>
                   </View>
@@ -349,7 +350,7 @@ export default function GroupScreen() {
               </View>
             ) : null}
             {detail.note ? <T v="small" color={colors.inkSoft}>“{detail.note}”</T> : null}
-            <Btn title="Delete this expense" kind="danger" onPress={() => { const e = detail; setDetail(null); del(e); }} />
+            <Btn title={t("Delete this expense")} kind="danger" onPress={() => { const e = detail; setDetail(null); del(e); }} />
           </View>
         ) : null}
       </Sheet>

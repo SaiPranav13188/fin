@@ -11,6 +11,7 @@ import { queryClient } from '@/lib/hooks';
 import { useStore } from '@/lib/store';
 import { colors, radius } from '@/lib/theme';
 import { haptic, rupees } from '@/lib/util';
+import { t } from '@/lib/i18n';
 
 type Row = { id: string; label: string; amount_paise: number | null; due_date?: string; renews_on?: string; frequency: string; payee?: string | null };
 const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -56,14 +57,14 @@ export default function Reminders() {
   };
   const act = async (path: string, method: 'POST' | 'DELETE') => {
     haptic.bump();
-    try { await api(path, { method }); reload(); } catch (e) { showToast(e instanceof ApiError ? e.message : 'Try again', 'warn'); }
+    try { await api(path, { method }); reload(); } catch (e) { showToast(e instanceof ApiError ? e.message : t("Try again"), 'warn'); }
   };
 
   const section = (title: string, rows: Row[] | undefined, base: string, emoji: string) => (
     <Animated.View layout={LinearTransition.springify()} style={{ gap: 10 }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
         <T v="h3">{title}</T>
-        <Press onPress={() => open(base === '/subscriptions' ? 'sub' : 'bill')}><T v="small" w="bold" color={colors.purple}>＋ Add</T></Press>
+        <Press onPress={() => open(base === '/subscriptions' ? 'sub' : 'bill')}><T v="small" w="bold" color={colors.purple}>{t("＋ Add")}</T></Press>
       </View>
       {(rows ?? []).map((r, i) => {
         const when = (r.due_date ?? r.renews_on)!;
@@ -74,13 +75,13 @@ export default function Reminders() {
               <Text style={{ fontSize: 26 }}>{emoji}</Text>
               <View style={{ flex: 1 }}>
                 <T w="bold">{r.label}</T>
-                <T v="small" color={n <= 2 ? colors.coral : colors.inkSoft}>{n < 0 ? `${-n}d overdue` : n === 0 ? 'Today' : n === 1 ? 'Tomorrow' : nice(when)} · monthly</T>
+                <T v="small" color={n <= 2 ? colors.coral : colors.inkSoft}>{n < 0 ? `${-n}d overdue` : n === 0 ? 'Today' : n === 1 ? t("Tomorrow") : nice(when)} · monthly</T>
               </View>
               <View style={{ alignItems: 'flex-end', gap: 4 }}>
                 {r.amount_paise ? <T v="h3">{rupees(r.amount_paise)}</T> : null}
                 <View style={{ flexDirection: 'row', gap: 12 }}>
-                  <Press onPress={() => act(`${base}/${r.id}/paid`, 'POST')}><T v="small" w="bold" color={colors.mint}>Paid ✓</T></Press>
-                  <Press onPress={() => act(`${base}/${r.id}`, 'DELETE')}><T v="small" w="bold" color={colors.inkFaint}>Remove</T></Press>
+                  <Press onPress={() => act(`${base}/${r.id}/paid`, 'POST')}><T v="small" w="bold" color={colors.mint}>{t("Paid ✓")}</T></Press>
+                  <Press onPress={() => act(`${base}/${r.id}`, 'DELETE')}><T v="small" w="bold" color={colors.inkFaint}>{t("Remove")}</T></Press>
                 </View>
               </View>
             </Card>
@@ -95,16 +96,16 @@ export default function Reminders() {
   const preview = label.trim() ? `${label.trim()}${amount ? ` ₹${amount}` : ''} ${sheet === 'sub' ? 'renews' : 'is due'} ${daysTo(date) === 1 ? 'tomorrow' : `on ${nice(date)}`}. I'll remind you!` : "Tell me what to remember and I'll nudge you in time.";
 
   return (
-    <Screen title="Bills & subscriptions">
+    <Screen title={t("Bills & subscriptions")}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 20, paddingBottom: 40 }}>
         {empty ? (
-          <Empty title="Nothing to remember yet" sub="Add rent, an EMI, or Netflix and Fin will remind you before it's due."><Mascot size={120} mood="idle" /></Empty>
+          <Empty title={t("Nothing to remember yet")} sub={t("Add rent, an EMI, or Netflix and Fin will remind you before it's due.")}><Mascot size={120} mood="idle" /></Empty>
         ) : null}
-        {monthly ? <View style={{ backgroundColor: colors.purpleSoft, borderRadius: radius.lg, padding: 16 }}><T v="tiny" color={colors.inkSoft}>Subscriptions cost you</T><T v="h1">{rupees(monthly)} <T color={colors.inkSoft}>/ month</T></T></View> : null}
+        {monthly ? <View style={{ backgroundColor: colors.purpleSoft, borderRadius: radius.lg, padding: 16 }}><T v="tiny" color={colors.inkSoft}>{t("Subscriptions cost you")}</T><T v="h1">{rupees(monthly)} <T color={colors.inkSoft}>{t("/ month")}</T></T></View> : null}
         {section('Bills & responsibilities', resp.data, '/responsibilities', '🏠')}
         {section('Subscriptions', subs.data, '/subscriptions', '🔁')}
       </ScrollView>
-      <Sheet visible={!!sheet} onClose={() => setSheet(null)} title={sheet === 'sub' ? 'New subscription' : 'New bill'}>
+      <Sheet visible={!!sheet} onClose={() => setSheet(null)} title={sheet === 'sub' ? t("New subscription") : t("New bill")}>
         <View style={{ gap: 12 }}>
           <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8, minHeight: 84 }}>
             <Mascot size={56} mood={label ? 'happy' : 'idle'} />
@@ -113,7 +114,7 @@ export default function Reminders() {
           <Field value={label} onChangeText={setLabel} placeholder={sheet === 'sub' ? 'Netflix, Spotify, gym…' : 'Rent, EMI, loan to Rahul…'} maxLength={60} />
           <Field value={amount} onChangeText={(v) => setAmount(v.replace(/[^0-9.]/g, ''))} placeholder={sheet === 'sub' ? 'Amount (₹)' : 'Amount (₹, optional)'} keyboardType="decimal-pad" maxLength={9} />
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-            {QUICK.map((q) => <Chip key={q.label} label={q.label} active={iso(q.date()) === date} onPress={() => { haptic.tick(); setDate(iso(q.date())); }} />)}
+            {QUICK.map((q) => <Chip key={q.label} label={t(q.label)} active={iso(q.date()) === date} onPress={() => { haptic.tick(); setDate(iso(q.date())); }} />)}
           </ScrollView>
           {/* mini calendar: the next 14 days */}
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
@@ -127,7 +128,7 @@ export default function Reminders() {
               );
             })}
           </ScrollView>
-          <Btn title="Remind me" onPress={save} loading={busy} />
+          <Btn title={t("Remind me")} onPress={save} loading={busy} />
         </View>
       </Sheet>
     </Screen>

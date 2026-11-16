@@ -19,8 +19,8 @@ const kv = {
   },
 };
 
-export type Settings = { haptics: boolean; sound: boolean; reduceMotion: boolean; onboarded: boolean };
-const defaultSettings: Settings = { haptics: true, sound: false, reduceMotion: false, onboarded: false };
+export type Settings = { haptics: boolean; sound: boolean; reduceMotion: boolean; onboarded: boolean; lang: 'en' | 'hi' | 'te' };
+const defaultSettings: Settings = { haptics: true, sound: false, reduceMotion: false, onboarded: false, lang: 'en' };
 
 type Toast = { id: number; text: string; tone: 'ok' | 'warn' | 'info' };
 

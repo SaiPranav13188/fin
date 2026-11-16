@@ -9,6 +9,7 @@ import { ApiError, api } from '@/lib/api';
 import { refreshAll } from '@/lib/hooks';
 import { colors } from '@/lib/theme';
 import { haptic } from '@/lib/util';
+import { t } from '@/lib/i18n';
 
 export default function Join() {
   const { token } = useLocalSearchParams<{ token: string }>();
@@ -35,7 +36,7 @@ export default function Join() {
   };
 
   return (
-    <Screen title="Join group">
+    <Screen title={t("Join group")}>
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 14, paddingBottom: 40 }}>
         <Mascot size={130} mood={error ? 'worried' : info ? 'excited' : 'thinking'} speech={error ?? (info ? "You're invited!" : 'Checking the link…')} />
         {info ? (
@@ -44,7 +45,7 @@ export default function Join() {
             <T v="h1" center>{info.name}</T>
             {info.claimable.length ? (
               <>
-                <T color={colors.inkSoft} center>Did a friend already add you? Tap your name.</T>
+                <T color={colors.inkSoft} center>{t("Did a friend already add you? Tap your name.")}</T>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 6 }}>
                   {info.claimable.map((m, i) => (
                     <Press key={m.id} onPress={() => setClaim(claim === m.id ? null : m.id)} label={m.name}>
@@ -54,10 +55,10 @@ export default function Join() {
                 </View>
               </>
             ) : null}
-            <Btn title={claim ? "That's me, join" : 'Join as a new member'} onPress={join} loading={busy} style={{ alignSelf: 'stretch', marginTop: 10 }} />
+            <Btn title={claim ? t("That's me, join") : t("Join as a new member")} onPress={join} loading={busy} style={{ alignSelf: 'stretch', marginTop: 10 }} />
           </>
         ) : null}
-        {error ? <Btn title="Go home" kind="soft" onPress={() => router.replace('/home')} /> : null}
+        {error ? <Btn title={t("Go home")} kind="soft" onPress={() => router.replace('/home')} /> : null}
       </View>
     </Screen>
   );

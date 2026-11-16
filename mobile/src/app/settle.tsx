@@ -17,6 +17,7 @@ import { refreshAll, useGroup, useGroups } from '@/lib/hooks';
 import { useStore } from '@/lib/store';
 import { colors, radius, spring } from '@/lib/theme';
 import { haptic, rupees } from '@/lib/util';
+import { t } from '@/lib/i18n';
 
 const { width: W } = Dimensions.get('window');
 type Step = { from_member: string; to_member: string; amount_paise: number; upi_link: string | null; over_upi_limit: boolean; from_name: string; to_name: string; mine: boolean; needs_upi_id: boolean };
@@ -26,21 +27,21 @@ const APath = Animated.createAnimatedComponent(Path);
 
 /** Fin carries a coin along a dotted arc from You to your friend. The trail is the progress bar. */
 function Processing({ from, to }: { from: string; to: string }) {
-  const t = useSharedValue(0);
+  const prog = useSharedValue(0);
   const [line, setLine] = useState(0);
   const width = W - 80;
   useEffect(() => {
-    t.value = withRepeat(withTiming(1, { duration: 2400, easing: Easing.inOut(Easing.quad) }), -1, false);
+    prog.value = withRepeat(withTiming(1, { duration: 2400, easing: Easing.inOut(Easing.quad) }), -1, false);
     const i = setInterval(() => setLine((l) => (l + 1) % CALM.length), 1900);
     return () => clearInterval(i);
   }, []);
   const walker = useAnimatedStyle(() => {
-    const x = t.value * width;
-    const y = -Math.sin(t.value * Math.PI) * 70;
-    return { transform: [{ translateX: x - 32 }, { translateY: y - 62 }, { rotate: `${Math.sin(t.value * Math.PI * 10) * 6}deg` }] };
+    const x = prog.value * width;
+    const y = -Math.sin(prog.value * Math.PI) * 70;
+    return { transform: [{ translateX: x - 32 }, { translateY: y - 62 }, { rotate: `${Math.sin(prog.value * Math.PI * 10) * 6}deg` }] };
   });
   const arc = `M 0 80 Q ${width / 2} ${80 - 140} ${width} 80`;
-  const trail = useAnimatedProps(() => ({ strokeDashoffset: (1 - t.value) * (width * 1.25) }));
+  const trail = useAnimatedProps(() => ({ strokeDashoffset: (1 - prog.value) * (width * 1.25) }));
   return (
     <Animated.View entering={FadeIn} style={{ alignItems: 'center', gap: 26, paddingTop: 50 }}>
       <View style={{ width, height: 130 }}>
@@ -52,7 +53,7 @@ function Processing({ from, to }: { from: string; to: string }) {
         <View style={{ position: 'absolute', left: -22, top: 78 }}><Avatar name={from} index={0} size={40} /></View>
         <View style={{ position: 'absolute', right: -22, top: 78 }}><Avatar name={to} index={1} size={40} /></View>
       </View>
-      <Animated.View key={line} entering={FadeInDown} exiting={FadeOut}><T v="h3" color={colors.inkSoft} center>{CALM[line]}</T></Animated.View>
+      <Animated.View key={line} entering={FadeInDown} exiting={FadeOut}><T v="h3" color={colors.inkSoft} center>{t(CALM[line])}</T></Animated.View>
     </Animated.View>
   );
 }
@@ -150,7 +151,7 @@ export default function Settle() {
   const floatStyle = useAnimatedStyle(() => ({ opacity: float.value < 0.9 ? float.value * 1.4 : (1 - float.value) * 10, transform: [{ translateY: -float.value * 70 }, { scale: 0.8 + float.value * 0.4 }] }));
   const backToPlan = () => { setPhase('plan'); setCur(null); setPlan(null); load(); };
 
-  const title = phase === 'plan' ? 'Settle up' : phase === 'success' ? '' : cur ? `Pay ${cur.to_name}` : '';
+  const title = phase === 'plan' ? t("Settle up") : phase === 'success' ? '' : cur ? `Pay ${cur.to_name}` : '';
   return (
     <Screen title={title}>
       <Confetti fire={boom} coins />
@@ -162,7 +163,7 @@ export default function Settle() {
             </ScrollView>
           ) : null}
           {!plan ? <><Skeleton h={90} /><Skeleton h={90} /></> : plan.steps.length === 0 ? (
-            <Empty title="All settled 🎉" sub="Nobody owes anybody in this group."><Mascot size={130} mood="cheer" /></Empty>
+            <Empty title={t("All settled 🎉")} sub={t("Nobody owes anybody in this group.")}><Mascot size={130} mood="cheer" /></Empty>
           ) : (
             <>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
@@ -175,19 +176,19 @@ export default function Settle() {
                     <Avatar name={s.from_name} index={i} size={40} />
                     <View style={{ flex: 1, alignItems: 'center' }}>
                       <T v="h2">{rupees(s.amount_paise)}</T>
-                      <T v="small" color={colors.inkSoft}>{s.mine ? 'You' : s.from_name.split(' ')[0]} → {s.to_name === group.data?.members.find((m) => m.is_self)?.name ? 'You' : s.to_name.split(' ')[0]}</T>
+                      <T v="small" color={colors.inkSoft}>{s.mine ? t("You") : s.from_name.split(' ')[0]} → {s.to_name === group.data?.members.find((m) => m.is_self)?.name ? t("You") : s.to_name.split(' ')[0]}</T>
                     </View>
                     <Avatar name={s.to_name} index={i + 3} size={40} />
                   </View>
                   {s.mine ? (
                     <View style={{ flexDirection: 'row', gap: 8 }}>
-                      <Btn small title="Paid in cash" kind="soft" onPress={() => record(s, 'cash')} style={{ flex: 1 }} />
-                      <Btn small title="Pay with UPI" onPress={() => start(s)} loading={busy && cur === s} style={{ flex: 1 }} />
+                      <Btn small title={t("Paid in cash")} kind="soft" onPress={() => record(s, 'cash')} style={{ flex: 1 }} />
+                      <Btn small title={t("Pay with UPI")} onPress={() => start(s)} loading={busy && cur === s} style={{ flex: 1 }} />
                     </View>
                   ) : (
                     <View style={{ flexDirection: 'row', gap: 8 }}>
-                      <Btn small title="Got it in cash" kind="soft" onPress={() => record(s, 'cash')} style={{ flex: 1 }} />
-                      <Btn small title="Remind" icon="💌" kind="soft" style={{ flex: 1 }}
+                      <Btn small title={t("Got it in cash")} kind="soft" onPress={() => record(s, 'cash')} style={{ flex: 1 }} />
+                      <Btn small title={t("Remind")} icon="💌" kind="soft" style={{ flex: 1 }}
                         onPress={() => router.push({ pathname: '/assistant', params: { group: groupId, nudge: s.from_member } })} />
                     </View>
                   )}
@@ -200,7 +201,7 @@ export default function Settle() {
 
       {phase === 'check' && cur ? (
         <Animated.View entering={FadeInDown.springify()} style={{ flex: 1, gap: 14, paddingTop: 44 }}>
-          <View style={{ alignItems: 'center' }}><Mascot size={110} mood="thinking" prop="magnifier" speech="One quick check first" /></View>
+          <View style={{ alignItems: 'center' }}><Mascot size={110} mood="thinking" prop="magnifier" speech={t("One quick check first")} /></View>
           {flags.map((f, i) => (
             <Animated.View key={f.code} entering={FadeInDown.delay(i * 80).springify()} style={[styles.flag, { backgroundColor: f.level === 'block' ? colors.coralSoft : colors.amberSoft }]}>
               <Text style={{ fontSize: 22 }}>{f.level === 'block' ? '✋' : '🛡️'}</Text>
@@ -209,9 +210,9 @@ export default function Settle() {
           ))}
           <View style={{ flex: 1 }} />
           {flags.some((f) => f.level === 'block') ? (
-            <Btn title="Mark as paid in cash instead" kind="soft" onPress={() => record(cur, 'cash')} loading={busy} />
-          ) : <Btn title="Looks right, continue" onPress={() => setPhase('pay')} />}
-          <Btn title="Go back" kind="ghost" onPress={backToPlan} />
+            <Btn title={t("Mark as paid in cash instead")} kind="soft" onPress={() => record(cur, 'cash')} loading={busy} />
+          ) : <Btn title={t("Looks right, continue")} onPress={() => setPhase('pay')} />}
+          <Btn title={t("Go back")} kind="ghost" onPress={backToPlan} />
         </Animated.View>
       ) : null}
 
@@ -222,9 +223,9 @@ export default function Settle() {
             <T v="h2">{cur.to_name}</T>
             <T v="small" color={colors.inkSoft}>{group.data?.members.find((m) => m.id === cur.to_member)?.upi_id}</T>
             <RollingNumber text={rupees(cur.amount_paise)} size={52} />
-            <T v="small" color={colors.inkFaint} center style={{ maxWidth: 260 }}>This opens your UPI app with everything filled in. You enter your PIN there, never in Fin.</T>
+            <T v="small" color={colors.inkFaint} center style={{ maxWidth: 260 }}>{t("This opens your UPI app with everything filled in. You enter your PIN there, never in Fin.")}</T>
           </View>
-          <SwipeToPay label="Swipe to pay" onDone={openUpi} />
+          <SwipeToPay label={t("Swipe to pay")} onDone={openUpi} />
         </Animated.View>
       ) : null}
 
@@ -232,12 +233,12 @@ export default function Settle() {
 
       {phase === 'ask' && cur ? (
         <Animated.View entering={FadeInDown.springify()} style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 14 }}>
-          <Mascot size={130} mood="idle" speech="Did it go through?" />
+          <Mascot size={130} mood="idle" speech={t("Did it go through?")} />
           <T v="h2" center>{rupees(cur.amount_paise)} to {cur.to_name}</T>
           <View style={{ alignSelf: 'stretch', gap: 10, marginTop: 10 }}>
-            <Btn title="Yes, it's paid" icon="✓" onPress={() => record(cur, 'upi')} loading={busy} />
-            <Btn title="Still pending" kind="soft" onPress={() => setPhase('pending')} />
-            <Btn title="It failed" kind="ghost" onPress={() => { haptic.warn(); setPhase('failed'); }} />
+            <Btn title={t("Yes, it's paid")} icon="✓" onPress={() => record(cur, 'upi')} loading={busy} />
+            <Btn title={t("Still pending")} kind="soft" onPress={() => setPhase('pending')} />
+            <Btn title={t("It failed")} kind="ghost" onPress={() => { haptic.warn(); setPhase('failed'); }} />
           </View>
         </Animated.View>
       ) : null}
@@ -245,12 +246,12 @@ export default function Settle() {
       {phase === 'pending' && cur ? (
         <Animated.View entering={FadeIn} style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 }}>
           <Mascot size={140} mood="idle" prop="tea" />
-          <T v="h2" center>Sipping tea while we wait</T>
-          <T color={colors.inkSoft} center style={{ maxWidth: 280 }}>Banks usually take about 30 seconds. Your money is safe either way.</T>
+          <T v="h2" center>{t("Sipping tea while we wait")}</T>
+          <T color={colors.inkSoft} center style={{ maxWidth: 280 }}>{t("Banks usually take about 30 seconds. Your money is safe either way.")}</T>
           <View style={styles.timer}><T v="h3" color={colors.purple}>{waited < 30 ? `${30 - waited}s` : 'Any moment now…'}</T></View>
           <View style={{ alignSelf: 'stretch', gap: 10, marginTop: 14 }}>
-            <Btn title="It went through" icon="✓" onPress={() => record(cur, 'upi')} loading={busy} />
-            <Btn title="I'll check later" kind="ghost" onPress={backToPlan} />
+            <Btn title={t("It went through")} icon="✓" onPress={() => record(cur, 'upi')} loading={busy} />
+            <Btn title={t("I'll check later")} kind="ghost" onPress={backToPlan} />
           </View>
         </Animated.View>
       ) : null}
@@ -258,12 +259,12 @@ export default function Settle() {
       {phase === 'failed' && cur ? (
         <Animated.View entering={FadeIn} style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 }}>
           <Mascot size={140} mood="worried" prop="umbrella" />
-          <T v="h2" center>That one didn't go through</T>
-          <T color={colors.inkSoft} center style={{ maxWidth: 290 }}>No money left your account unless your bank says so. This can happen if the UPI app closed, the bank was busy, or no UPI app is installed.</T>
+          <T v="h2" center>{t("That one didn't go through")}</T>
+          <T color={colors.inkSoft} center style={{ maxWidth: 290 }}>{t("No money left your account unless your bank says so. This can happen if the UPI app closed, the bank was busy, or no UPI app is installed.")}</T>
           <View style={{ alignSelf: 'stretch', gap: 10, marginTop: 14 }}>
-            <Btn title="Try again" onPress={() => setPhase('pay')} />
-            <Btn title="Mark as paid in cash" kind="soft" onPress={() => record(cur, 'cash')} loading={busy} />
-            <Btn title="Not now" kind="ghost" onPress={backToPlan} />
+            <Btn title={t("Try again")} onPress={() => setPhase('pay')} />
+            <Btn title={t("Mark as paid in cash")} kind="soft" onPress={() => record(cur, 'cash')} loading={busy} />
+            <Btn title={t("Not now")} kind="ghost" onPress={backToPlan} />
           </View>
         </Animated.View>
       ) : null}
@@ -275,11 +276,11 @@ export default function Settle() {
             <Animated.View entering={ZoomIn.springify().damping(8)}><Avatar name={cur.to_name} index={4} size={76} ring="paid" /></Animated.View>
           </View>
           <Mascot size={150} mood="cheer" />
-          <T v="h1" center>Paid!</T>
+          <T v="h1" center>{t("Paid!")}</T>
           <T color={colors.inkSoft} center>{rupees(cur.amount_paise)} to {cur.to_name} is recorded.</T>
           <View style={{ alignSelf: 'stretch', gap: 10, marginTop: 20 }}>
-            <Btn title="Done" onPress={() => (router.canGoBack() ? router.back() : router.replace('/home'))} />
-            <Btn title="Settle another" kind="ghost" onPress={backToPlan} />
+            <Btn title={t("Done")} onPress={() => (router.canGoBack() ? router.back() : router.replace('/home'))} />
+            <Btn title={t("Settle another")} kind="ghost" onPress={backToPlan} />
           </View>
         </Animated.View>
       ) : null}

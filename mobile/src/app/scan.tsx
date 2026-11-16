@@ -15,6 +15,7 @@ import { refreshAll, useGroup, useGroups } from '@/lib/hooks';
 import { useStore } from '@/lib/store';
 import { colorFor, colors, font, radius, shadow, spring } from '@/lib/theme';
 import { allocate, haptic, rupees } from '@/lib/util';
+import { t } from '@/lib/i18n';
 
 type Rect = { x: number; y: number; w: number; h: number };
 
@@ -44,7 +45,7 @@ function DragItem({ item, index, everyone, colorsFor, onDrop, onReset }: { item:
           <View style={{ flex: 1 }}>
             <T w="semi" numberOfLines={1}>{item.name}</T>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 }}>
-              {everyone ? <T v="small" color={colors.inkFaint}>Everyone · hold and drag to a friend</T> : colorsFor.map((c) => <View key={c} style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: colorFor(c) }} />)}
+              {everyone ? <T v="small" color={colors.inkFaint}>{t("Everyone · hold and drag to a friend")}</T> : colorsFor.map((c) => <View key={c} style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: colorFor(c) }} />)}
             </View>
           </View>
           <T v="h3">{rupees(item.amount_paise)}</T>
@@ -127,7 +128,7 @@ export default function Scan() {
       setAdvice(r.question ?? r.explanation);
       if (!r.question) { setRule(''); haptic.success(); } else haptic.warn();
     } catch (e) {
-      showToast(e instanceof ApiError ? e.message : 'Try again', 'warn');
+      showToast(e instanceof ApiError ? e.message : t("Try again"), 'warn');
     } finally {
       setAdvising(false);
     }
@@ -172,7 +173,7 @@ export default function Scan() {
   const conflict = draft?.questions.find((q) => q.options_paise);
 
   return (
-    <Screen title="Scan a bill">
+    <Screen title={t("Scan a bill")}>
       <Confetti fire={done} />
       {!draft ? (
         <View style={{ flex: 1, gap: 16, paddingBottom: 24 }}>
@@ -189,12 +190,12 @@ export default function Scan() {
             {['tl', 'tr', 'bl', 'br'].map((c) => <View key={c} style={[styles.corner, c[0] === 't' ? { top: 14 } : { bottom: 14 }, c[1] === 'l' ? { left: 14 } : { right: 14 }]} />)}
           </View>
           <View style={{ alignItems: 'center' }}>
-            <Mascot size={90} mood={mood} prop={prop} speech={scanning ? 'Reading the bill…' : error ?? undefined} />
+            <Mascot size={90} mood={mood} prop={prop} speech={scanning ? t("Reading the bill…") : error ?? undefined} />
           </View>
           <View style={{ flex: 1 }} />
-          <Btn title="Take a photo" icon="📸" onPress={() => pick(true)} disabled={scanning || !groupId} />
-          <Btn title="Choose from gallery" kind="soft" onPress={() => pick(false)} disabled={scanning || !groupId} />
-          <T v="small" color={colors.inkFaint} center>The photo is read once and never stored.</T>
+          <Btn title={t("Take a photo")} icon="📸" onPress={() => pick(true)} disabled={scanning || !groupId} />
+          <Btn title={t("Choose from gallery")} kind="soft" onPress={() => pick(false)} disabled={scanning || !groupId} />
+          <T v="small" color={colors.inkFaint} center>{t("The photo is read once and never stored.")}</T>
         </View>
       ) : (
         <View style={{ flex: 1 }}>
@@ -220,8 +221,8 @@ export default function Scan() {
             ))}
             <Animated.View layout={LinearTransition.springify()} style={{ gap: 8, marginTop: 4 }}>
               <View style={{ flexDirection: 'row', gap: 8 }}>
-                <TextInput value={rule} onChangeText={setRule} placeholder="Or say it: “Rahul skipped drinks”" placeholderTextColor={colors.inkFaint} style={styles.rule} onSubmitEditing={applyRule} returnKeyType="done" maxLength={200} />
-                <Btn small title="Apply" kind="soft" onPress={applyRule} loading={advising} />
+                <TextInput value={rule} onChangeText={setRule} placeholder={t("Or say it: “Rahul skipped drinks”")} placeholderTextColor={colors.inkFaint} style={styles.rule} onSubmitEditing={applyRule} returnKeyType="done" maxLength={200} />
+                <Btn small title={t("Apply")} kind="soft" onPress={applyRule} loading={advising} />
               </View>
               {advice ? <Animated.View entering={FadeInDown}><T v="small" color={colors.purple} w="semi">✨ {advice}</T></Animated.View> : null}
             </Animated.View>
@@ -232,7 +233,7 @@ export default function Scan() {
               {members.map((m, i) => (
                 <View key={m.id} ref={(r) => { refs.current[m.id] = r; }} collapsable={false} style={{ alignItems: 'center', width: 66 }} onLayout={measure}>
                   <Avatar name={m.name} index={i} size={44} wiggleKey={hop[m.id]} />
-                  <T v="tiny" numberOfLines={1} style={{ textTransform: 'none', letterSpacing: 0 }}>{m.is_self ? 'You' : m.name.split(' ')[0]}</T>
+                  <T v="tiny" numberOfLines={1} style={{ textTransform: 'none', letterSpacing: 0 }}>{m.is_self ? t("You") : m.name.split(' ')[0]}</T>
                   <Text style={{ fontFamily: font.bold, fontSize: 12.5, color: colorFor(i) }}>{rupees(perPerson[m.id] ?? 0)}</Text>
                 </View>
               ))}

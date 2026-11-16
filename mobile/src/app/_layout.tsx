@@ -23,6 +23,7 @@ export default function RootLayout() {
     PlusJakartaSans_400Regular, PlusJakartaSans_500Medium, PlusJakartaSans_600SemiBold, PlusJakartaSans_700Bold, PlusJakartaSans_800ExtraBold,
   });
   const { ready, access, hydrate } = useStore();
+  const lang = useStore((s) => s.settings.lang);
   const segments = useSegments();
   const router = useRouter();
 
@@ -50,7 +51,8 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
           <StatusBar style="dark" />
-          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg }, animation: 'slide_from_right' }}>
+          {/* key: changing the language redraws every screen in the new language */}
+          <Stack key={lang} screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg }, animation: 'slide_from_right' }}>
             <Stack.Screen name="assistant" options={{ presentation: 'transparentModal', animation: 'fade' }} />
             <Stack.Screen name="settle" options={{ animation: 'slide_from_bottom' }} />
             <Stack.Screen name="add-expense" options={{ animation: 'slide_from_bottom' }} />
