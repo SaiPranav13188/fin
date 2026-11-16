@@ -44,8 +44,12 @@ export default function AddExpense() {
   const [category, setCategory] = useState(draft?.category ?? 'other');
   const [payer, setPayer] = useState<string | undefined>(draft ? Object.keys(draft.payers)[0] : undefined);
   const [picked, setPicked] = useState<string[] | null>(draft?.member_ids?.length ? draft.member_ids : null);
-  const [type, setType] = useState<SplitType>('equal');
-  const [vals, setVals] = useState<Record<string, string>>({});
+  // An AI draft can carry an uneven split ("Priya owes only 600"); keep it when the user taps Edit.
+  const d: any = draft;
+  const draftVals: Record<string, number> | null = d?.split_type === 'exact' ? Object.fromEntries(Object.entries(d.exact ?? {}).map(([k, v]) => [k, (v as number) / 100]))
+    : d?.split_type === 'shares' ? d.weights : d?.split_type === 'percent' ? d.percents : null;
+  const [type, setType] = useState<SplitType>(draftVals ? d.split_type : 'equal');
+  const [vals, setVals] = useState<Record<string, string>>(draftVals ? Object.fromEntries(Object.entries(draftVals).map(([k, v]) => [k, String(v)])) : {});
   const [busy, setBusy] = useState(false);
   const [sliced, setSliced] = useState(0);
   const burst = useSharedValue(0);
