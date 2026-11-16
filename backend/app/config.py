@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     gemini_api_key: str = ""
     fast_model: str = "gemini-3.5-flash-lite"  # parsing, routing, nudges, insights
     smart_model: str = "gemini-3.8-flash"  # receipt photos
+    rules_first: bool = True  # simple sentences skip the model: instant, and saves free-tier quota
     agent_max_steps: int = 5
     agent_max_output_tokens: int = 4000
     agent_token_budget: int = 30000  # input + output tokens per request

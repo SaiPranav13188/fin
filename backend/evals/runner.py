@@ -2,6 +2,7 @@
 import json
 import os
 import sys
+import time
 from pathlib import Path
 
 os.environ.setdefault("FIN_DATABASE_URL", "sqlite:///:memory:")
@@ -33,9 +34,15 @@ def run_expense_evals(ctx: Ctx) -> dict:
     by_id = {v: k for k, v in by_name.items()}
     fields = correct = hallucinated = q_expected = q_asked = 0
     failures = []
+    pause = float(os.environ.get("EVAL_PAUSE", "0"))  # seconds between cases, to stay under free-tier rate limits
+    sources: dict[str, int] = {}
     for case in CASES["expense"]:
         text, exp = case["text"], case["expect"]
+        ctx.tool_calls, ctx.tokens = [], 0
         d = expense.parse_expense(ctx, text)
+        sources[d["source"]] = sources.get(d["source"], 0) + 1
+        if pause and d["source"] == "ai":
+            time.sleep(pause)
         bad = []
         # hallucination checks apply to every case
         if d["amount_paise"] is not None and not expense.traceable_amount(d["amount_paise"], text):
@@ -81,7 +88,7 @@ def run_expense_evals(ctx: Ctx) -> dict:
             bad.append(f"asked needlessly: {d['questions']}")
         if bad:
             failures.append({"text": text, "problems": bad})
-    return {"cases": len(CASES["expense"]), "field_accuracy": correct / max(fields, 1), "hallucinated": hallucinated,
+    return {"cases": len(CASES["expense"]), "drafted_by": sources, "field_accuracy": correct / max(fields, 1), "hallucinated": hallucinated,
             "question_recall": q_asked / max(q_expected, 1), "failures": failures}
 
 

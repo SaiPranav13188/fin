@@ -8,7 +8,7 @@ import time
 
 from ..config import get_settings
 from ..schemas import CATEGORIES
-from .harness import AgentFailure, Ctx, as_data, clean_text, log_run, looks_like_injection, run_llm
+from .harness import AgentFailure, Ctx, as_data, clean_text, log_run, looks_like_injection, members_block, run_llm
 from .tools import build_tools, match_member, pick
 
 AGENT = "expense_parser"
@@ -176,7 +176,7 @@ _SCHEMA = {
 
 _SYSTEM = """You are Fin's Expense Parser. Turn one message about a shared expense into a draft.
 The message may be in English, Hindi, Hinglish or Telugu, with typos. "2.5k" means 2500. "I", "me", "maine", "nenu" mean the user.
-Call get_members first to get member ids. Use search_contacts for a misspelt name. Use calc for any arithmetic.
+The group's members are listed in <members> as member_id: name. Use search_contacts only if a name is misspelt and you are unsure who it is. Use calc for any arithmetic. For a simple message, answer straight away.
 If nobody is said to have paid, the user paid. If no one is named to split with, set everyone to true.
 The user is included in the split unless the message says otherwise.
 Use split_type "equal" unless the message gives specific amounts, shares or percentages."""
@@ -184,9 +184,9 @@ Use split_type "equal" unless the message gives specific amounts, shares or perc
 
 def llm_parse(ctx: Ctx, text: str) -> dict:
     specs, impl = build_tools(ctx)
-    tools, impl = pick(specs, impl, ["get_members", "search_contacts", "calc"])
-    out = run_llm(ctx, agent=AGENT, system=_SYSTEM, content=as_data("user_message", text), schema=_SCHEMA,
-                  tools=tools, tool_impl=impl)
+    tools, impl = pick(specs, impl, ["search_contacts", "calc"])
+    out = run_llm(ctx, agent=AGENT, system=_SYSTEM, schema=_SCHEMA, tools=tools, tool_impl=impl,
+                  content=members_block(ctx) + "\n" + as_data("user_message", text))
     to_paise = lambda r: round(r * 100) if isinstance(r, (int, float)) else None  # noqa: E731
     amount = to_paise(out["amount_rupees"])
     payers = {p["member_id"]: to_paise(p["amount_rupees"]) for p in out["payers"]}
@@ -278,10 +278,42 @@ def validate_draft(ctx: Ctx, text: str, d: dict) -> dict:
     }
 
 
+_COMPLEX = re.compile(r"%|\b(skip\w*|except|only|each|half|but|not|didn'?t|without|extra|more|less|minus|plus|percent|"
+                      r"shares?|twice|double|owes?|return\w*|refund\w*|nahi|nahin|chhod\w*|instead|per head)\b", re.I)
+
+
+def simple_enough(ctx: Ctx, text: str) -> dict | None:
+    """Rules first for simple sentences: instant, free and offline. Returns a finished draft, or None to use the model.
+
+    Deliberately strict. One amount, a short Latin-script sentence, nothing that hints at an uneven split,
+    and every word after "with" must be a known member. Anything else goes to the model.
+    """
+    words = re.findall(r"[^\W\d_]+", text)
+    if not text.isascii() or len(words) > 10 or len(numbers_in(text)) != 1 or _COMPLEX.search(text):
+        return None
+    if looks_like_injection(text):
+        return None
+    members = [m for m in ctx.group.members if m.active]
+    after_with = re.search(r"\b(?:with|between|among)\b(.*)$", text, re.I)
+    for w in re.findall(r"[^\W\d_]+", after_with.group(1)) if after_with else []:
+        lw = w.lower()
+        if lw in _STOP or lw in _SELF or _EVERYONE.fullmatch(lw) or lw in ("friends", "us", "flatmates", "guys"):
+            continue
+        if not match_member(members, lw):
+            return None  # probably a person who is not in the group: let the model handle it
+    draft = validate_draft(ctx, text, rules_parse(ctx, text))
+    return draft if draft["ready"] and not draft["removed_fields"] else None
+
+
 def parse_expense(ctx: Ctx, text: str) -> dict:
     started = time.monotonic()
     text = clean_text(text)
     ctx.step(AGENT, "Reading your message")
+    if get_settings().rules_first and (quick := simple_enough(ctx, text)):
+        ctx.step(AGENT, "Double-checking the numbers")
+        quick["source"] = "rules"
+        log_run(ctx, AGENT, text, quick, "ok", started)
+        return quick
     status, source = "ok", "ai"
     try:
         raw = llm_parse(ctx, text)

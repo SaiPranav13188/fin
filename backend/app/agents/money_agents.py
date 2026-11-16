@@ -13,7 +13,7 @@ from ..config import get_settings
 from ..models import Settlement
 from ..services import ledger, money
 from .harness import AgentFailure, Ctx, as_data, clean_text, log_run, run_llm
-from .tools import build_tools, match_member, pick
+from .tools import match_member
 
 
 # ---------------- Settle-up Planner ----------------
@@ -59,8 +59,7 @@ _NUDGE_SCHEMA = {"type": "object", "additionalProperties": False, "required": ["
                  "properties": {"message": {"type": "string"}}}
 _NUDGE_SYSTEM = """You are Fin's Nudge Writer. Write one short, warm reminder message (under 220 characters) from the user to a friend who owes them money.
 Match the requested tone (polite, funny or firm) and language (en = English, hi = Hindi in Devanagari, hinglish = Hindi in Latin letters, te = Telugu script).
-Mention the friend's first name and the exact amount as given, once. No other numbers, no links, no threats, no shaming, no mention of interest or penalties.
-You may call get_history to see whether they usually pay on time, and adjust warmth accordingly."""
+Mention the friend's first name and the exact amount as given, once. No other numbers, no links, no threats, no shaming, no mention of interest or penalties."""
 
 
 def _nudge_ok(msg: str, amount_text: str, name: str) -> bool:
@@ -103,9 +102,7 @@ def write_nudge(ctx: Ctx, member_id: str, tone: str = "polite", language: str = 
     message, status = fallback, "fallback"
     ctx.step(agent, "Writing a friendly reminder")
     try:
-        specs, impl = build_tools(ctx)
-        tools, impl = pick(specs, impl, ["get_history"])
-        out = run_llm(ctx, agent=agent, system=_NUDGE_SYSTEM, schema=_NUDGE_SCHEMA, tools=tools, tool_impl=impl,
+        out = run_llm(ctx, agent=agent, system=_NUDGE_SYSTEM, schema=_NUDGE_SCHEMA,
                       content=f"tone: {tone}\nlanguage: {language}\namount: {amount_text}\n"
                               f"{as_data('data', f'friend first name: {first}; group: {g.name}')}")
         candidate = clean_text(out["message"], 300)

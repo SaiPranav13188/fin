@@ -203,7 +203,7 @@ export default function Assistant() {
                   ) : null}
                 </Animated.View>
               ))}
-              <T v="tiny" color={colors.inkFaint} style={{ marginTop: 8 }}>{result.source === 'ai' ? '✨ Drafted by AI' : '⚡ Drafted offline'} · nothing is saved until you confirm</T>
+              <T v="tiny" color={colors.inkFaint} style={{ marginTop: 8 }}>{result.source === 'ai' ? '✨ Drafted by AI' : '⚡ Quick draft'} · nothing is saved until you confirm</T>
               <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
                 <Btn small title="Edit" kind="soft" style={{ flex: 1 }} onPress={() => router.replace({ pathname: '/add-expense', params: { draft: JSON.stringify(result) } })} />
                 {result.ready ? <Btn small title={`Split ${rupees(result.amount_paise)}`} style={{ flex: 1.4 }} loading={saving} onPress={() => confirmExpense(result)} /> : null}

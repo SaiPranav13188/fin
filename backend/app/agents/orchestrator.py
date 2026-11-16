@@ -63,7 +63,7 @@ def _route(state: State) -> State:
         try:
             out = run_llm(ctx, agent="orchestrator", content=as_data("user_message", text),
                           system="Classify what the user of a bill-splitting app wants. add_expense: recording money "
-                                 "spent. settle_up: paying back or clearing balances. nudge: reminding a friend to pay. "
+                                 "spent. settle_up: paying back, clearing balances, or working out who should pay whom. nudge: reminding a friend to pay. "
                                  "ask: a question about their spending or balances. unclear: anything else.",
                           schema={"type": "object", "additionalProperties": False, "required": ["intent"],
                                   "properties": {"intent": {"type": "string", "enum": list(INTENTS)}}})

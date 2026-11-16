@@ -2,8 +2,9 @@
 import re
 import time
 
-from .harness import AgentFailure, Ctx, as_data, clean_text, llm_available, log_run, looks_like_injection, run_llm
-from .tools import build_tools, match_member, pick
+from .harness import (AgentFailure, Ctx, as_data, clean_text, llm_available, log_run, looks_like_injection,
+                      members_block, run_llm)
+from .tools import match_member
 
 # ---------------- Receipt Reader ----------------
 _RECEIPT_SCHEMA = {
@@ -109,7 +110,7 @@ _ADVICE_SCHEMA = {
 }
 _ADVICE_SYSTEM = """You are Fin's Split Advisor. You are given a bill's items (with index) and the user's rules about who had what.
 Decide who shares each item. Items nobody is excluded from are shared by everyone at the table.
-Call get_members for member ids. Only change what the rules say. If a rule is unclear, ask one short question."""
+The people at the table are listed in <members> as member_id: name. Only change what the rules say. If a rule is unclear, ask one short question."""
 
 _GROUPS = {
     "drinks": "drink beer wine whisky whiskey vodka rum cocktail mojito coke pepsi soda juice lassi shake coffee tea chai "
@@ -172,12 +173,9 @@ def advise_split(ctx: Ctx, items: list[dict], rule: str, table: list[str] | None
     ctx.step(agent, "Working out who had what")
     status = "ok"
     try:
-        specs, impl = build_tools(ctx)
-        tools, impl = pick(specs, impl, ["get_members", "calc"])
         listing = "\n".join(f"{i}. {it['name']} - ₹{it['amount_paise'] / 100:.2f}" for i, it in enumerate(items))
-        out = run_llm(ctx, agent=agent, system=_ADVICE_SYSTEM, schema=_ADVICE_SCHEMA, tools=tools, tool_impl=impl,
-                      content=f"People at the table (member_ids): {table}\n{as_data('data', listing)}\n"
-                              f"{as_data('user_message', rule)}")
+        out = run_llm(ctx, agent=agent, system=_ADVICE_SYSTEM, schema=_ADVICE_SCHEMA,
+                      content=f"{members_block(ctx, table)}\n{as_data('data', listing)}\n{as_data('user_message', rule)}")
     except AgentFailure:
         ctx.model, status = "rules", "fallback"
         out = rules_advice(ctx, items, rule, table)

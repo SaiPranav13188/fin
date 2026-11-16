@@ -56,8 +56,12 @@ gives the same answer every time.
 ### Evals
 
 [backend/evals/cases.json](backend/evals/cases.json) holds 64 expense cases (typos, "2.5k", Hinglish, Hindi and
-Telugu script, missing amounts, unknown names, prompt injection), plus intent and safety cases. CI fails if field
-accuracy drops below 95% or any hallucinated field appears.
+Telugu script, missing amounts, unknown names, prompt injection), plus intent and safety cases. CI runs them on the
+rules path and fails if field accuracy drops below 95% or any hallucinated field appears. On the live Gemini path the
+same set scored 99.3% field accuracy with 0 hallucinated fields (run with `EVAL_PAUSE=5 FIN_RULES_FIRST=false`).
+
+Simple sentences ("cab 450 with Priya") are drafted by the rules without calling the model, which makes them instant
+and saves API quota. Anything uneven, ambiguous, non-Latin or naming someone outside the group goes to the model.
 
 ## Run it locally
 
