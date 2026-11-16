@@ -3,7 +3,7 @@ import { Platform } from 'react-native';
 import { create } from 'zustand';
 
 /** Tokens live in the Android Keystore via SecureStore. Web (dev preview only) uses memory + localStorage. */
-const kv = {
+export const kv = {
   async get(key: string) {
     if (Platform.OS === 'web') return globalThis.localStorage?.getItem(key) ?? null;
     return SecureStore.getItemAsync(key);

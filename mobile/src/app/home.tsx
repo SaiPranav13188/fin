@@ -13,6 +13,7 @@ import { Mascot, Mood } from '@/components/Mascot';
 import { Avatar, Card, Empty, Press, RollingNumber, Skeleton, T } from '@/components/ui';
 import { ApiError, api } from '@/lib/api';
 import { queryClient, refreshAll, useGroups, useMe, useReminders, useSummary } from '@/lib/hooks';
+import { flushQueue, useQueue } from '@/lib/offline';
 import { useStore } from '@/lib/store';
 import { colors, font, radius, shadow, spring } from '@/lib/theme';
 import { useTilt } from '@/lib/tilt';
@@ -59,6 +60,7 @@ export default function Home() {
   const [refreshing, setRefreshing] = useState(false);
   const tilt = useTilt();
   const showToast = useStore((s) => s.showToast);
+  const waiting = useQueue((s) => s.items.length);
 
   const owed = summary.data?.you_are_owed_paise ?? 0;
   const owe = summary.data?.you_owe_paise ?? 0;
@@ -126,6 +128,12 @@ export default function Home() {
           </View>
           <Press onPress={() => router.push('/profile')} label="Profile"><Avatar name={me.data?.name ?? '?'} index={1} size={46} /></Press>
         </Animated.View>
+
+        {waiting ? (
+          <Press onPress={() => flushQueue(refreshAll)} style={{ backgroundColor: colors.amberSoft, borderRadius: radius.pill, paddingVertical: 10, paddingHorizontal: 16, alignSelf: 'center' }} label="Sync now">
+            <T v="small" w="bold">⏳ {waiting === 1 ? '1 expense is' : `${waiting} expenses are`} waiting to sync · tap to retry</T>
+          </Press>
+        ) : null}
 
         {/* balance card with tilt parallax */}
         <View>

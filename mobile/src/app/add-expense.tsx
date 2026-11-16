@@ -11,6 +11,7 @@ import { Confetti, Keypad, PizzaChart } from '@/components/fx';
 import { Avatar, Btn, Chip, Press, RollingNumber, Screen, T } from '@/components/ui';
 import { ApiError, Draft, api } from '@/lib/api';
 import { refreshAll, useExpenses, useGroup, useGroups } from '@/lib/hooks';
+import { enqueueExpense } from '@/lib/offline';
 import { useStore } from '@/lib/store';
 import { CATEGORY, colorFor, colors, font, radius, shadow, spring } from '@/lib/theme';
 import { allocate, evalAmount, haptic, rupees } from '@/lib/util';
@@ -124,6 +125,14 @@ export default function AddExpense() {
       await refreshAll();
       setTimeout(() => (router.canGoBack() ? router.back() : router.replace(`/group/${groupId}`)), 1250);
     } catch (e) {
+      // No internet: keep a hand-made expense on the phone and send it later. (AI drafts need the server.)
+      if (e instanceof ApiError && e.status === 0 && !draft?.draft_id) {
+        enqueueExpense(groupId, body);
+        haptic.bump();
+        showToast("You're offline. Saved on your phone, and Fin will sync it when you're back.", 'info');
+        setTimeout(() => (router.canGoBack() ? router.back() : router.replace('/home')), 600);
+        return;
+      }
       haptic.error();
       showToast(e instanceof ApiError ? e.message : 'Could not save', 'warn');
       setBusy(false);

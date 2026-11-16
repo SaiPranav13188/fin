@@ -12,7 +12,8 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { ToastHost } from '@/components/ui';
-import { queryClient } from '@/lib/hooks';
+import { queryClient, refreshAll } from '@/lib/hooks';
+import { startQueueSync } from '@/lib/offline';
 import { useStore } from '@/lib/store';
 import { colors } from '@/lib/theme';
 
@@ -44,6 +45,9 @@ export default function RootLayout() {
   useEffect(() => {
     if (!access) queryClient.clear();
   }, [access]);
+
+  // Send expenses that were added offline, once we are signed in and back online.
+  useEffect(() => (access ? startQueueSync(refreshAll) : undefined), [access]);
 
   if (!ready || !fontsLoaded) return null;
   return (
