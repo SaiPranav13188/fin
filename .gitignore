@@ -1,0 +1,35 @@
+# secrets: never commit
+.env
+.env.*
+!.env.example
+*.keystore
+*.jks
+*.p8
+*.p12
+*.pem
+google-services.json
+service-account*.json
+credentials.json
+
+# python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+*.db
+
+# node / expo
+node_modules/
+.expo/
+dist/
+web-build/
+*.tsbuildinfo
+android/
+ios/
+*.aab
+*.apk
+
+.DS_Store
+.claude/
+FIN_PROJECT_PLAN.md

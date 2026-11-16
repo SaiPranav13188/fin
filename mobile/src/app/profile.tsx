@@ -1,0 +1,84 @@
+import * as Linking from 'expo-linking';
+import React, { useEffect, useState } from 'react';
+import { Alert, ScrollView, Switch, View } from 'react-native';
+
+import { Chillar } from '@/components/Chillar';
+import { Btn, Card, Chip, Field, Screen, T } from '@/components/ui';
+import { API_URL, ApiError, api } from '@/lib/api';
+import { queryClient, useMe } from '@/lib/hooks';
+import { Settings, useStore } from '@/lib/store';
+import { colors } from '@/lib/theme';
+import { haptic } from '@/lib/util';
+
+
+
+export default function Profile() {
+  const me = useMe();
+  const { settings, setSetting, setTokens, refresh, showToast } = useStore();
+  const [name, setName] = useState('');
+  const [upi, setUpi] = useState('');
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    if (me.data) { setName(me.data.name); setUpi(me.data.upi_id ?? ''); }
+  }, [me.data]);
+
+  const save = async (patch: Record<string, unknown>) => {
+    setBusy(true);
+    try {
+      await api('/auth/me', { method: 'PATCH', body: patch });
+      queryClient.invalidateQueries({ queryKey: ['me'] });
+      haptic.success();
+      showToast('Saved', 'ok');
+    } catch (e) {
+      showToast(e instanceof ApiError ? e.message : 'Could not save', 'warn');
+    } finally {
+      setBusy(false);
+    }
+  };
+  const logout = async () => {
+    if (refresh) api('/auth/logout', { body: { refresh_token: refresh }, auth: false }).catch(() => {});
+    await setTokens(null, null);
+  };
+  const remove = () =>
+    Alert.alert('Delete your account?', 'Your profile and login are deleted for good. Shared group history stays for your friends, without your name.', [
+      { text: 'Keep my account', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: async () => {
+        try { await api('/auth/me', { method: 'DELETE' }); await setTokens(null, null); } catch (e) { showToast(e instanceof ApiError ? e.message : 'Could not delete', 'warn'); }
+      } },
+    ]);
+
+  const toggle = (key: keyof Settings, label: string, sub: string) => (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+      <View style={{ flex: 1 }}><T w="bold">{label}</T><T v="small" color={colors.inkSoft}>{sub}</T></View>
+      <Switch value={settings[key]} onValueChange={(v) => { setSetting(key, v); haptic.tick(); }} trackColor={{ true: colors.pink, false: colors.line }} thumbColor="#fff" />
+    </View>
+  );
+
+  return (
+    <Screen title="You">
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 16, paddingBottom: 50 }} keyboardShouldPersistTaps="handled">
+        <View style={{ alignItems: 'center' }}><Chillar size={110} mood="happy" /></View>
+        <Card style={{ gap: 12 }}>
+          <Field label="Name" value={name} onChangeText={setName} maxLength={80} />
+          <Field label="Your UPI ID (friends pay you here)" value={upi} onChangeText={setUpi} autoCapitalize="none" placeholder="name@okhdfcbank" />
+          <T v="small" color={colors.inkSoft}>{me.data?.email}</T>
+          <Btn title="Save" kind="soft" loading={busy} onPress={() => save({ name: name.trim(), upi_id: upi.trim() || null })} />
+        </Card>
+        <Card index={1} style={{ gap: 12 }}>
+          <T v="tiny" color={colors.inkFaint}>Reminder language</T>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            {([['en', 'English'], ['hi', 'हिंदी'], ['te', 'తెలుగు']] as const).map(([k, l]) => <Chip key={k} label={l} active={me.data?.language === k} onPress={() => save({ language: k })} />)}
+          </View>
+        </Card>
+        <Card index={2} style={{ gap: 16 }}>
+          {toggle('haptics', 'Haptics', 'Little taps as you swipe and pay')}
+          {toggle('reduceMotion', 'Reduce motion', 'Swap big animations for simple fades')}
+        </Card>
+        <Btn title="Privacy policy" kind="ghost" onPress={() => Linking.openURL(`${API_URL}/privacy`)} />
+        <Btn title="Log out" kind="soft" onPress={logout} />
+        <Btn title="Delete my account" kind="danger" onPress={remove} />
+        <T v="small" color={colors.inkFaint} center>Fin splits and tracks bills and opens your own UPI app. It does not hold money, offer loans or process payments.</T>
+      </ScrollView>
+    </Screen>
+  );
+}

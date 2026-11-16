@@ -1,0 +1,98 @@
+{
+  "expo": {
+    "name": "Fin",
+    "slug": "fin",
+    "version": "1.0.0",
+    "scheme": "fin",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#FFF7FB",
+    "android": {
+      "package": "com.finsplit.app",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "backgroundColor": "#FFE4F1",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "CAMERA",
+        "RECORD_AUDIO",
+        "VIBRATE",
+        "USE_BIOMETRIC",
+        "POST_NOTIFICATIONS"
+      ],
+      "blockedPermissions": [
+        "android.permission.READ_SMS",
+        "android.permission.RECEIVE_SMS",
+        "android.permission.READ_CONTACTS",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "data": [
+            {
+              "scheme": "fin"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ]
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.finsplit.app"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-font",
+      "expo-sharing",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#FFF7FB",
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 160
+        }
+      ],
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Fin uses the microphone so you can say an expense instead of typing it.",
+          "speechRecognitionPermission": "Fin turns what you say into an expense draft."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Fin uses the camera to scan bills and UPI QR codes."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Fin reads a bill photo you choose so it can split the items."
+        }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Fin uses biometrics to reveal your balance."
+        }
+      ],
+      "expo-notifications"
+    ],
+    "experiments": {
+      "typedRoutes": false
+    }
+  }
+}
