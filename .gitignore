@@ -33,3 +33,6 @@ ios/
 .DS_Store
 .claude/
 FIN_PROJECT_PLAN.md
+
+# MCP config holds hosting API keys
+.mcp.json
