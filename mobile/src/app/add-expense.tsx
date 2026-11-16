@@ -114,6 +114,7 @@ export default function AddExpense() {
       // "Sliced!": the pizza bursts apart.
       setSliced(Date.now());
       haptic.success();
+      if (history.data?.length === 0) showToast('First split in this group! 🎉', 'ok');
       burst.value = withSequence(withSpring(1, spring.bouncy), withTiming(1, { duration: 700 }));
       await refreshAll();
       setTimeout(() => (router.canGoBack() ? router.back() : router.replace(`/group/${groupId}`)), 1250);

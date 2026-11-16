@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useMemo, useRef, useState } from 'react';
-import { FlatList, KeyboardAvoidingView, Platform, Share, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, FlatList, KeyboardAvoidingView, Platform, Share, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { FadeInDown, LinearTransition, interpolate, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,14 +8,15 @@ import { scheduleOnRN } from 'react-native-worklets';
 
 import { Mascot } from '@/components/Mascot';
 import { Confetti, PizzaChart, Progress } from '@/components/fx';
-import { Avatar, Btn, Empty, Press, Screen, Sheet, Skeleton, T } from '@/components/ui';
+import { Avatar, Btn, Empty, Field, Press, Screen, Sheet, Skeleton, T } from '@/components/ui';
 import { ApiError, Expense, Member, Message, api } from '@/lib/api';
 import { queryClient, useBalances, useExpenses, useGroup, useGroupLive, useMessages } from '@/lib/hooks';
 import { useStore } from '@/lib/store';
 import { CATEGORY, colors, font, radius, shadow, spring } from '@/lib/theme';
+import { useTilt } from '@/lib/tilt';
 import { haptic, rupees, timeAgo } from '@/lib/util';
 
-function SplitCard({ e, members, net, onDelete, onSettle, onNudge }: { e: Expense; members: Member[]; net: Record<string, number>; onDelete: () => void; onSettle: () => void; onNudge: (m: Member) => void }) {
+function SplitCard({ e, members, net, onDelete, onSettle, onNudge, onOpen }: { e: Expense; members: Member[]; net: Record<string, number>; onDelete: () => void; onSettle: () => void; onNudge: (m: Member) => void; onOpen: () => void }) {
   const x = useSharedValue(0);
   const crumple = useSharedValue(0);
   const burst = useSharedValue(0);
@@ -51,7 +52,7 @@ function SplitCard({ e, members, net, onDelete, onSettle, onNudge }: { e: Expens
       <Animated.View style={[styles.hint, { right: 16 }, right]}><T v="small" w="bold" color={colors.coral}>Delete 🗑️</T></Animated.View>
       <GestureDetector gesture={pan}>
         <Animated.View style={[styles.split, card]}>
-          <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
+          <Press onPress={onOpen} scaleTo={0.98} style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }} label={`Open ${e.description}`}>
             <View style={{ width: 62, height: 62, alignItems: 'center', justifyContent: 'center' }}>
               <View style={{ transform: [{ scale: 0.3 }] }}><PizzaChart values={people.map((id) => e.shares[id])} size={170} burst={burst} /></View>
             </View>
@@ -60,7 +61,7 @@ function SplitCard({ e, members, net, onDelete, onSettle, onNudge }: { e: Expens
               <T v="small" color={colors.inkSoft} numberOfLines={1}>{payer?.is_self ? 'You' : payer?.name ?? 'Someone'} paid · {timeAgo(e.created_at)}{e.created_via !== 'manual' ? ' · ✨' : ''}</T>
             </View>
             <T v="h2">{rupees(e.amount_paise)}</T>
-          </View>
+          </Press>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 10 }}>
             {people.map((id) => {
               const m = members.find((mm) => mm.id === id);
@@ -97,6 +98,11 @@ export default function GroupScreen() {
   useGroupLive(id);
   const [text, setText] = useState('');
   const [menu, setMenu] = useState(false);
+  const [detail, setDetail] = useState<Expense | null>(null);
+  const [editing, setEditing] = useState<Member | null>(null);
+  const [friend, setFriend] = useState('');
+  const [upi, setUpi] = useState('');
+  const [saving, setSaving] = useState(false);
   const [celebrate, setCelebrate] = useState(0);
   const wasSettled = useRef<boolean | null>(null);
   const showToast = useStore((s) => s.showToast);
@@ -150,6 +156,50 @@ export default function GroupScreen() {
     queryClient.invalidateQueries({ queryKey: ['groups'] });
   };
 
+  const addFriend = async () => {
+    if (!friend.trim()) return;
+    setSaving(true);
+    try {
+      await api(`/groups/${id}/members`, { body: { name: friend.trim() } });
+      haptic.success();
+      setFriend('');
+      await queryClient.refetchQueries({ queryKey: ['group', id] });
+      invalidate();
+    } catch (e) {
+      showToast(e instanceof ApiError ? e.message : 'Could not add them', 'warn');
+    } finally {
+      setSaving(false);
+    }
+  };
+  const saveUpi = async () => {
+    if (!editing) return;
+    setSaving(true);
+    try {
+      await api(`/groups/${id}/members/${editing.id}`, { method: 'PATCH', body: { name: editing.name, upi_id: upi.trim() || null } });
+      haptic.success();
+      setEditing(null);
+      invalidate();
+    } catch (e) {
+      showToast(e instanceof ApiError ? e.message : 'Could not save', 'warn');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Shake the phone to undo the expense you just added (within 10 minutes).
+  const latest = expenses.data?.[0];
+  const onShake = React.useCallback(() => {
+    if (!latest) return;
+    const iso = /[zZ]|[+-]\d\d:?\d\d$/.test(latest.created_at) ? latest.created_at : latest.created_at + 'Z';
+    if (Date.now() - new Date(iso).getTime() > 10 * 60 * 1000) return;
+    haptic.warn();
+    Alert.alert('Undo last expense?', `“${latest.description}” for ${rupees(latest.amount_paise)} will be removed.`, [
+      { text: 'Keep it', style: 'cancel' },
+      { text: 'Undo', style: 'destructive', onPress: () => del(latest) },
+    ]);
+  }, [latest?.id]);
+  useTilt(onShake);
+
   const invite = async () => {
     setMenu(false);
     try {
@@ -166,7 +216,7 @@ export default function GroupScreen() {
       if (!e) return null;
       return (
         <Animated.View entering={FadeInDown.delay(Math.min(index, 6) * 30).springify().damping(16)} layout={LinearTransition.springify()}>
-          <SplitCard e={e} members={members} net={net} onDelete={() => del(e)} onSettle={() => router.push({ pathname: '/settle', params: { group: id } })}
+          <SplitCard e={e} members={members} net={net} onDelete={() => del(e)} onOpen={() => setDetail(e)} onSettle={() => router.push({ pathname: '/settle', params: { group: id } })}
             onNudge={(m) => router.push({ pathname: '/assistant', params: { group: id, nudge: m.id } })} />
         </Animated.View>
       );
@@ -226,11 +276,19 @@ export default function GroupScreen() {
         <View style={{ gap: 10 }}>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4 }}>
             {members.map((m, i) => (
-              <View key={m.id} style={{ alignItems: 'center', width: 66 }}>
-                <Avatar name={m.name} index={i} size={42} />
-                <T v="tiny" numberOfLines={1} style={{ textTransform: 'none', letterSpacing: 0 }}>{m.is_self ? 'You' : m.name}</T>
-              </View>
+              <Press key={m.id} label={m.name} scaleTo={m.is_self || m.verified ? 1 : 0.92}
+                onPress={m.is_self || m.verified ? undefined : () => { setMenu(false); setUpi(m.upi_id ?? ''); setTimeout(() => setEditing(m), 250); }}>
+                <View style={{ alignItems: 'center', width: 66, opacity: 1 }}>
+                  <Avatar name={m.name} index={i} size={42} />
+                  <T v="tiny" numberOfLines={1} style={{ textTransform: 'none', letterSpacing: 0 }}>{m.is_self ? 'You' : m.name}</T>
+                  <T v="tiny" color={m.upi_id ? colors.mint : colors.amber} style={{ textTransform: 'none', letterSpacing: 0 }}>{m.upi_id ? 'UPI ✓' : m.is_self ? 'no UPI' : 'add UPI'}</T>
+                </View>
+              </Press>
             ))}
+          </View>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <View style={{ flex: 1 }}><Field value={friend} onChangeText={setFriend} placeholder="Add a friend by name" maxLength={40} onSubmitEditing={addFriend} returnKeyType="done" /></View>
+            <Btn title="Add" kind="soft" onPress={addFriend} loading={saving} disabled={!friend.trim()} />
           </View>
           <Btn title="Invite with a link" kind="soft" icon="🔗" onPress={invite} />
           <Btn title="Scan a bill" kind="soft" icon="🧾" onPress={() => { setMenu(false); router.push({ pathname: '/scan', params: { group: id } }); }} />
@@ -243,6 +301,58 @@ export default function GroupScreen() {
           }} />
         </View>
       </Sheet>
+
+      <Sheet visible={!!editing} onClose={() => setEditing(null)} title={editing ? `${editing.name}'s UPI ID` : ''}>
+        <View style={{ gap: 12 }}>
+          <T v="small" color={colors.inkSoft}>You need this to pay {editing?.name} from Fin. Ask them for it, and check the name in your UPI app the first time you pay.</T>
+          <Field value={upi} onChangeText={setUpi} placeholder="name@okhdfcbank" autoCapitalize="none" autoCorrect={false} />
+          <Btn title="Save" onPress={saveUpi} loading={saving} />
+        </View>
+      </Sheet>
+
+      <Sheet visible={!!detail} onClose={() => setDetail(null)} title={detail?.description}>
+        {detail ? (
+          <View style={{ gap: 12 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+              <View>
+                <T v="h1">{rupees(detail.amount_paise)}</T>
+                <T v="small" color={colors.inkSoft}>{(CATEGORY[detail.category] ?? CATEGORY.other).emoji} {(CATEGORY[detail.category] ?? CATEGORY.other).label} · {new Date(detail.spent_on + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</T>
+              </View>
+              <T v="tiny" color={colors.inkFaint}>{detail.split_type === 'itemised' ? 'by item' : detail.split_type === 'equal' ? 'split equally' : `by ${detail.split_type}`}</T>
+            </View>
+            <View style={styles.box}>
+              <T v="tiny" color={colors.inkFaint}>Paid by</T>
+              {Object.entries(detail.payers).map(([mid, amt]) => {
+                const m = members.find((x) => x.id === mid);
+                return <View key={mid} style={styles.line}><T w="semi">{m?.is_self ? 'You' : m?.name ?? 'Former member'}</T><T w="bold">{rupees(amt)}</T></View>;
+              })}
+            </View>
+            <View style={styles.box}>
+              <T v="tiny" color={colors.inkFaint}>Each person's share</T>
+              {Object.entries(detail.shares).map(([mid, amt]) => {
+                const m = members.find((x) => x.id === mid);
+                return <View key={mid} style={styles.line}><T w="semi">{m?.is_self ? 'You' : m?.name ?? 'Former member'}</T><T w="bold">{rupees(amt)}</T></View>;
+              })}
+            </View>
+            {detail.items.length ? (
+              <View style={styles.box}>
+                <T v="tiny" color={colors.inkFaint}>Items</T>
+                {detail.items.map((it, i) => (
+                  <View key={i} style={styles.line}>
+                    <View style={{ flex: 1 }}>
+                      <T w="semi" numberOfLines={1}>{it.name}</T>
+                      <T v="small" color={colors.inkSoft} numberOfLines={1}>{it.member_ids.map((mid) => { const m = members.find((x) => x.id === mid); return m?.is_self ? 'You' : m?.name.split(' ')[0] ?? '?'; }).join(', ')}</T>
+                    </View>
+                    <T w="bold">{rupees(it.amount_paise)}</T>
+                  </View>
+                ))}
+              </View>
+            ) : null}
+            {detail.note ? <T v="small" color={colors.inkSoft}>“{detail.note}”</T> : null}
+            <Btn title="Delete this expense" kind="danger" onPress={() => { const e = detail; setDetail(null); del(e); }} />
+          </View>
+        ) : null}
+      </Sheet>
     </Screen>
   );
 }
@@ -253,6 +363,8 @@ const styles = StyleSheet.create({
   hint: { position: 'absolute', top: 0, bottom: 0, justifyContent: 'center' },
   bubble: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 20 },
   system: { alignSelf: 'center', backgroundColor: colors.mintSoft, paddingHorizontal: 14, paddingVertical: 7, borderRadius: radius.pill },
+  box: { backgroundColor: '#fff', borderRadius: radius.md, padding: 14, gap: 8 },
+  line: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
   composer: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingTop: 8, backgroundColor: colors.bg },
   input: { flex: 1, height: 46, borderRadius: 23, backgroundColor: '#fff', paddingHorizontal: 16, fontFamily: font.medium, fontSize: 15, color: colors.ink, borderWidth: 1.5, borderColor: colors.line },
   spark: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.pinkSoft, alignItems: 'center', justifyContent: 'center' },
