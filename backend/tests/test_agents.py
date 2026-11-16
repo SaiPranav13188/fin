@@ -2,9 +2,10 @@
 import json
 from types import SimpleNamespace as NS
 
-import anthropic
-import httpx2
+import httpx
 import pytest
+from google.genai import errors as genai_errors
+from google.genai import types
 
 from app.agents import expense, harness, insights, money_agents, receipt
 from app.config import get_settings
@@ -145,9 +146,9 @@ def test_insights_sandbox_is_read_only_and_isolated(client, sai, trip):
 class FakeClient:
     def __init__(self, script):
         self.script, self.calls = list(script), []
-        self.messages = NS(create=self._create)
+        self.models = NS(generate_content=self._generate)
 
-    def _create(self, **kw):
+    def _generate(self, **kw):
         self.calls.append(kw)
         step = self.script.pop(0)
         if isinstance(step, Exception):
@@ -155,19 +156,27 @@ class FakeClient:
         return step
 
 
-def text_resp(obj, stop="end_turn", tokens=100):
-    body = obj if isinstance(obj, str) else json.dumps(obj)
-    return NS(stop_reason=stop, content=[NS(type="text", text=body)], usage=NS(input_tokens=tokens, output_tokens=tokens))
+def _resp(parts, tokens=200, finish="STOP"):
+    content = types.Content(role="model", parts=parts) if parts else None
+    return types.GenerateContentResponse(
+        candidates=[types.Candidate(content=content, finish_reason=finish)],
+        usage_metadata=types.GenerateContentResponseUsageMetadata(total_token_count=tokens))
+
+
+def text_resp(obj, tokens=200):
+    """The model's final answer: a call to the submit function. A plain string means it replied with text instead."""
+    if isinstance(obj, str):
+        return _resp([types.Part.from_text(text=obj)], tokens)
+    return _resp([types.Part(function_call=types.FunctionCall(name="submit", args=obj))], tokens)
 
 
 def tool_resp(name, args):
-    return NS(stop_reason="tool_use", content=[NS(type="tool_use", id="t1", name=name, input=args)],
-              usage=NS(input_tokens=50, output_tokens=50))
+    return _resp([types.Part(function_call=types.FunctionCall(name=name, args=args, id="t1"))], tokens=100)
 
 
 @pytest.fixture()
 def fake(monkeypatch, client):
-    monkeypatch.setattr(get_settings(), "anthropic_api_key", "test-key")
+    monkeypatch.setattr(get_settings(), "gemini_api_key", "test-key")
     monkeypatch.setattr(harness.time, "sleep", lambda s: None)
 
     def install(script):
@@ -195,8 +204,11 @@ def test_model_path_with_tool_call(fake):
     assert d["source"] == "ai" and d["ready"] and d["member_ids"] == [ids["Sai"], ids["Rahul"]]
     assert ctx.tool_calls[0]["tool"] == "get_members" and ctx.tokens == 300
     # the user's text travels as tagged data, never inside the system prompt
-    assert "<user_message>" in fc.calls[0]["messages"][0]["content"]
-    assert "pizza" not in fc.calls[0]["system"][0]["text"].lower().split("rules you always follow")[0][-200:]
+    assert "<user_message>" in fc.calls[0]["contents"][0].parts[0].text
+    assert "pizza" not in fc.calls[0]["config"].system_instruction.lower()
+    assert fc.calls[0]["model"] == get_settings().fast_model
+    # the tool result goes back to the model as a function response
+    assert fc.calls[1]["contents"][-1].parts[0].function_response.response["result"][0]["name"] == "Sai"
 
 
 def test_invented_member_and_amount_are_removed(fake):
@@ -223,14 +235,16 @@ def test_invalid_json_retries_then_falls_back(fake):
 
 def test_timeout_refusal_and_api_errors_fall_back(fake):
     install, ctx = fake
-    req = httpx2.Request("POST", "https://api.anthropic.com/v1/messages")
-    for script in ([anthropic.APITimeoutError(request=req)] * 3,
-                   [text_resp("", stop="refusal")],
-                   [anthropic.BadRequestError("bad", response=httpx2.Response(400, request=req), body=None)],
-                   [text_resp("{", stop="max_tokens")] * 3):
-        install(script)
+    for script in ([httpx.ReadTimeout("slow")] * 3,
+                   [_resp([], finish="SAFETY")],
+                   [genai_errors.ClientError(400, {"error": {"message": "bad request"}})],
+                   [genai_errors.ClientError(429, {"error": {"message": "quota"}})] * 3,  # free-tier rate limit
+                   [genai_errors.ServerError(503, {"error": {"message": "overloaded"}})] * 3,
+                   [_resp([], finish="MAX_TOKENS")] * 3,
+                   [text_resp({"description": "half an answer"})] * 3):  # required fields missing
+        fc = install(script)
         d = expense.parse_expense(ctx, "cab 450 with priya")
-        assert d["source"] == "rules" and d["amount_paise"] == 45000
+        assert d["source"] == "rules" and d["amount_paise"] == 45000 and not fc.script
 
 
 def test_step_limit_and_token_budget(fake, monkeypatch):
@@ -239,7 +253,8 @@ def test_step_limit_and_token_budget(fake, monkeypatch):
     monkeypatch.setattr(get_settings(), "agent_max_steps", 2)
     fc = install([tool_resp("calc", {"expression": "1+1"}), tool_resp("calc", {"expression": "2+2"}), text_resp(good)])
     expense.parse_expense(ctx, "I paid 1200 for pizza with Rahul")
-    assert "tool_choice" not in fc.calls[1] and fc.calls[2]["tool_choice"] == {"type": "none"}
+    allowed = lambda i: fc.calls[i]["config"].tool_config.function_calling_config.allowed_function_names  # noqa: E731
+    assert allowed(1) is None and allowed(2) == ["submit"]
     ctx.tokens = 0
     monkeypatch.setattr(get_settings(), "agent_token_budget", 120)
     fc = install([tool_resp("calc", {"expression": "1+1"})] * 5)

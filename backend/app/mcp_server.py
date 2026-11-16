@@ -1,4 +1,4 @@
-"""MCP server: lets Claude Desktop use Fin. Same rule as the app: draft first, confirm to save.
+"""MCP server: lets MCP clients (such as Claude Desktop) use Fin. Same rule as the app: draft first, confirm to save.
 
 Run:  FIN_MCP_EMAIL=you@example.com FIN_MCP_PASSWORD=... uv run python -m app.mcp_server
 """

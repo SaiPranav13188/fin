@@ -18,12 +18,12 @@ class Settings(BaseSettings):
     public_base_url: str = "http://localhost:8000"  # used for invite links
 
     # Agents. With no key, every agent uses its rule-based fallback.
-    anthropic_api_key: str = ""
-    fast_model: str = "claude-haiku-5-5"
-    smart_model: str = "claude-sonnet-5-5"
+    gemini_api_key: str = ""
+    fast_model: str = "gemini-3.5-flash-lite"  # parsing, routing, nudges, insights
+    smart_model: str = "gemini-3.8-flash"  # receipt photos
     agent_max_steps: int = 5
-    agent_max_output_tokens: int = 2000
-    agent_token_budget: int = 20000  # input + output tokens per request
+    agent_max_output_tokens: int = 4000
+    agent_token_budget: int = 30000  # input + output tokens per request
     agent_timeout_seconds: float = 20.0
     agent_max_retries: int = 2
 

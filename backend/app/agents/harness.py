@@ -14,7 +14,9 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
-import anthropic
+from google import genai
+from google.genai import errors as genai_errors
+from google.genai import types
 from sqlalchemy.orm import Session
 
 from ..config import get_settings
@@ -72,103 +74,183 @@ GUARD_RULES = """Rules you always follow:
 - You only produce a draft. You cannot save, send or pay. The user reviews every draft.
 - Never invent a person, amount, date or item. Use only what is in the data or what a tool returned. If something needed is missing or unclear, leave it null and ask one short question instead of guessing.
 - Member ids must be copied exactly from the tool results or the member list.
-- Reply only with the JSON the schema asks for."""
+- When you are done, call the submit function with your answer. Never reply with plain text."""
 
 
-# ---------- model client ----------
-_client: anthropic.Anthropic | None = None
+# ---------- model client (Google Gemini) ----------
+_client: genai.Client | None = None
+SUBMIT = "submit"  # the model hands back its answer by calling this function, so the answer always has a schema
 
 
 def llm_available() -> bool:
-    return bool(get_settings().anthropic_api_key)
+    return bool(get_settings().gemini_api_key)
 
 
-def _get_client() -> anthropic.Anthropic:
+def _get_client() -> genai.Client:
     global _client
     s = get_settings()
     if _client is None:
-        _client = anthropic.Anthropic(api_key=s.anthropic_api_key, timeout=s.agent_timeout_seconds, max_retries=1)
+        _client = genai.Client(api_key=s.gemini_api_key,
+                               http_options=types.HttpOptions(timeout=int(s.agent_timeout_seconds * 1000)))
     return _client
+
+
+def to_gemini_schema(schema: dict) -> dict:
+    """JSON Schema -> the subset Gemini function declarations accept (nullable instead of type lists)."""
+    out: dict = {}
+    t = schema.get("type")
+    if isinstance(t, list):
+        out["nullable"] = "null" in t
+        t = next(x for x in t if x != "null")
+    if t:
+        out["type"] = t.upper()
+    for key in ("description", "enum", "required"):
+        if key in schema:
+            out[key] = schema[key]
+    if "properties" in schema:
+        out["properties"] = {k: to_gemini_schema(v) for k, v in schema["properties"].items()}
+    if "items" in schema:
+        out["items"] = to_gemini_schema(schema["items"])
+    return out
+
+
+def _declaration(name: str, description: str, schema: dict) -> types.FunctionDeclaration:
+    params = to_gemini_schema(schema) if schema.get("properties") else None
+    return types.FunctionDeclaration(name=name, description=description, parameters=params)
+
+
+def _check_shape(schema: dict, data: Any) -> None:
+    """The model's answer must have every required field, at every level. Otherwise we retry."""
+    t = schema.get("type")
+    types_ = t if isinstance(t, list) else [t]
+    if data is None:
+        if "null" not in types_:
+            raise ValueError("missing value")
+        return
+    if "object" in types_:
+        if not isinstance(data, dict):
+            raise ValueError("expected an object")
+        for key in schema.get("required", []):
+            if key not in data:
+                if "null" in _as_list(schema["properties"][key].get("type")):
+                    data[key] = None  # an omitted nullable field means null
+                else:
+                    raise ValueError(f"missing field {key}")
+            _check_shape(schema["properties"][key], data[key])
+    elif "array" in types_:
+        if not isinstance(data, list):
+            raise ValueError("expected a list")
+        for item in data:
+            _check_shape(schema.get("items", {}), item)
+    elif "enum" in schema and data not in schema["enum"]:
+        raise ValueError("value not allowed")
+
+
+def _as_list(t) -> list:
+    return t if isinstance(t, list) else [t]
+
+
+def _to_parts(content: list | str) -> list[types.Part]:
+    """Callers pass text, or a list of text and {"image": bytes, "media_type": str} entries."""
+    items = [content] if isinstance(content, str) else content
+    return [types.Part.from_text(text=i) if isinstance(i, str)
+            else types.Part.from_bytes(data=i["image"], mime_type=i["media_type"]) for i in items]
+
+
+_BLOCKED = {"SAFETY", "PROHIBITED_CONTENT", "BLOCKLIST", "SPII", "RECITATION", "IMAGE_SAFETY"}
 
 
 def run_llm(ctx: Ctx, *, agent: str, system: str, content: list | str, schema: dict,
             tools: list[dict] | None = None, tool_impl: dict[str, Callable[..., Any]] | None = None,
             smart: bool = False) -> dict:
-    """Runs a bounded tool loop and returns JSON matching `schema`. Raises AgentFailure otherwise."""
+    """Runs a bounded tool loop and returns data matching `schema`. Raises AgentFailure otherwise."""
     s = get_settings()
     if not llm_available():
         raise AgentFailure("no api key")
     model = s.smart_model if smart else s.fast_model
     ctx.model = model
     client = _get_client()
-    messages: list[dict] = [{"role": "user", "content": content}]
     tool_impl = tool_impl or {}
+    declarations = [_declaration(t["name"], t["description"], t["input_schema"]) for t in tools or []]
+    declarations.append(_declaration(SUBMIT, "Hand back your final answer. Call this exactly once, when you are done.",
+                                     schema))
+    first = types.Content(role="user", parts=_to_parts(content))
     last_error = "unknown"
 
     for attempt in range(s.agent_max_retries + 1):
+        contents: list = [first]
         steps = 0
         try:
             while True:
                 if ctx.tokens >= s.agent_token_budget:
                     raise AgentFailure("token budget used up")
-                kwargs: dict = dict(
-                    model=model, max_tokens=s.agent_max_output_tokens,
-                    system=[{"type": "text", "text": system + "\n\n" + GUARD_RULES,
-                             "cache_control": {"type": "ephemeral"}}],
-                    messages=messages,
-                    output_config={"effort": "low", "format": {"type": "json_schema", "schema": schema}},
+                # Past the step limit the only function left is submit, so the model must answer with what it has.
+                allowed = [SUBMIT] if steps >= s.agent_max_steps else None
+                config = types.GenerateContentConfig(
+                    system_instruction=system + "\n\n" + GUARD_RULES,
+                    max_output_tokens=s.agent_max_output_tokens,
+                    tools=[types.Tool(function_declarations=declarations)],
+                    tool_config=types.ToolConfig(function_calling_config=types.FunctionCallingConfig(
+                        mode="ANY", allowed_function_names=allowed)),
+                    automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
                 )
-                # Past the step limit the model gets no tools, so it must answer with what it has.
-                if tools:
-                    kwargs["tools"] = tools
-                    if steps >= s.agent_max_steps:
-                        kwargs["tool_choice"] = {"type": "none"}
-                resp = client.messages.create(**kwargs)
-                ctx.tokens += resp.usage.input_tokens + resp.usage.output_tokens
+                resp = client.models.generate_content(model=model, contents=contents, config=config)
+                usage = resp.usage_metadata
+                ctx.tokens += (usage.total_token_count or 0) if usage else 0
 
-                if resp.stop_reason == "tool_use":
-                    messages.append({"role": "assistant", "content": resp.content})
-                    results = []
-                    for block in resp.content:
-                        if block.type != "tool_use":
-                            continue
-                        steps += 1
-                        results.append(_run_tool(ctx, agent, block, tool_impl))
-                    messages.append({"role": "user", "content": results})
-                    continue
-                if resp.stop_reason == "refusal":
+                if resp.prompt_feedback and resp.prompt_feedback.block_reason:
                     raise AgentFailure("model declined")
-                if resp.stop_reason != "end_turn":
-                    raise ValueError(f"stopped early: {resp.stop_reason}")
-                text = next((b.text for b in resp.content if b.type == "text"), "")
-                return json.loads(text)
+                cand = resp.candidates[0] if resp.candidates else None
+                reason = getattr(getattr(cand, "finish_reason", None), "name", "") or ""
+                if reason in _BLOCKED:
+                    raise AgentFailure("model declined")
+                parts = cand.content.parts if cand and cand.content and cand.content.parts else []
+                calls = [p.function_call for p in parts if p.function_call]
+                if not calls:
+                    raise ValueError(f"no usable answer ({reason or 'empty'})")
+
+                answer = next((c for c in calls if c.name == SUBMIT), None)
+                if answer is not None:
+                    data = json.loads(json.dumps(dict(answer.args or {}), default=str))
+                    _check_shape(schema, data)
+                    return data
+
+                contents.append(cand.content)  # unchanged, so the model's thought signatures stay intact
+                results = []
+                for call in calls:
+                    steps += 1
+                    out = _run_tool(ctx, agent, call, tool_impl)
+                    results.append(types.Part(function_response=types.FunctionResponse(
+                        name=call.name, id=call.id, response=out)))
+                contents.append(types.Content(role="user", parts=results))
         except AgentFailure:
             raise
-        except (json.JSONDecodeError, ValueError) as e:  # invalid JSON or cut-off output: retry from scratch
+        except ValueError as e:  # malformed or cut-off answer: retry from scratch
             last_error = f"bad output: {e}"
-            messages = messages[:1]
-        except (anthropic.RateLimitError, anthropic.APIConnectionError, anthropic.InternalServerError) as e:
+        except genai_errors.APIError as e:
+            if e.code not in (408, 429) and e.code < 500:  # other 4xx: retrying will not help
+                raise AgentFailure(f"api error {e.code}") from e
+            last_error = f"api error {e.code}"  # rate limit (common on the free tier) or server error
+            time.sleep(0.4 * (attempt + 1))
+        except Exception as e:  # timeouts and network errors
             last_error = type(e).__name__
             time.sleep(0.4 * (attempt + 1))
-        except anthropic.APIStatusError as e:  # 4xx: retrying will not help
-            raise AgentFailure(f"api error {e.status_code}") from e
     raise AgentFailure(last_error)
 
 
-def _run_tool(ctx: Ctx, agent: str, block, tool_impl: dict) -> dict:
-    name, args = block.name, block.input if isinstance(block.input, dict) else {}
+def _run_tool(ctx: Ctx, agent: str, call, tool_impl: dict) -> dict:
+    name, args = call.name, dict(call.args or {})
     fn = tool_impl.get(name)
     ctx.step(agent, TOOL_LABELS.get(name, "Checking"), tool=name)
     try:
         if fn is None:
             raise ValueError("unknown tool")
-        out = fn(**args)
+        text = json.dumps(fn(**args), default=str)
         ctx.tool_calls.append({"tool": name, "args": args, "ok": True})
-        return {"type": "tool_result", "tool_use_id": block.id, "content": json.dumps(out, default=str)[:6000]}
+        return {"result": json.loads(text) if len(text) <= 6000 else text[:6000] + " …(cut)"}
     except Exception as e:
         ctx.tool_calls.append({"tool": name, "args": args, "ok": False, "error": str(e)[:200]})
-        return {"type": "tool_result", "tool_use_id": block.id, "content": f"Error: {str(e)[:200]}",
-                "is_error": True}
+        return {"error": str(e)[:200]}
 
 
 TOOL_LABELS = {

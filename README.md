@@ -19,7 +19,7 @@ Fin never holds or moves money. Paying opens GPay, PhonePe or Paytm with the det
 
 ## The agent system
 
-Nine agents sit behind one orchestrator (a LangGraph graph). Each one can only read data and produce a **draft**.
+Nine agents sit behind one orchestrator (a LangGraph graph) and use Google's Gemini models. Each one can only read data and produce a **draft**.
 Nothing is saved, sent or paid until the user confirms.
 
 | Agent | Job |
@@ -65,7 +65,7 @@ Backend (Python 3.12, [uv](https://docs.astral.sh/uv/)):
 
 ```bash
 cd backend
-cp .env.example .env          # add FIN_ANTHROPIC_API_KEY to use the model; without it the rules fallback runs
+cp .env.example .env          # add FIN_GEMINI_API_KEY to use the model; without it the rules fallback runs
 uv sync
 uv run uvicorn app.main:app --reload
 uv run pytest                 # tests and the eval gate
@@ -85,7 +85,7 @@ Voice input and haptics need a development build on a phone: `npx eas-cli build 
 ## Deploy
 
 - **API:** [render.yaml](render.yaml) deploys the Docker image. Set `FIN_DATABASE_URL` (Supabase Postgres),
-  `FIN_ANTHROPIC_API_KEY` and `FIN_PUBLIC_BASE_URL` in the Render dashboard. Migrations run on start.
+  `FIN_GEMINI_API_KEY` and `FIN_PUBLIC_BASE_URL` in the Render dashboard. Migrations run on start.
 - **App:** `npx eas-cli build -p android --profile production` builds the `.aab` for Google Play.
 
 Secrets live only in environment variables. `.env` files, keystores and service-account keys are git-ignored.

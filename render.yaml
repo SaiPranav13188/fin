@@ -18,7 +18,7 @@ services:
         value: "true"
       - key: FIN_DATABASE_URL
         sync: false # Supabase session-pooler connection string
-      - key: FIN_ANTHROPIC_API_KEY
+      - key: FIN_GEMINI_API_KEY
         sync: false
       - key: FIN_PUBLIC_BASE_URL
         sync: false

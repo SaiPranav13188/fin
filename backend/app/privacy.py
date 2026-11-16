@@ -20,7 +20,9 @@ h1{font-size:28px}h2{font-size:18px;margin-top:28px}li{margin:6px 0}small{color:
 <li><b>Push token:</b> if you allow notifications, a device token so we can send reminders.</li></ul>
 <h2>AI processing</h2>
 <p>To draft expenses, read receipts and answer questions, the text or photo you submit is sent to our AI provider
-(Anthropic) for processing. It is used to produce your result and is not used by Fin for advertising.</p>
+(Google, through the Gemini API) for processing. Fin uses it only to produce your result, never for advertising. Google may use
+content sent through its free API tier to improve its own products, so avoid putting sensitive personal details in
+messages to the assistant or in bill photos.</p>
 <h2>Who can see your data</h2>
 <p>People in a group can see that group's expenses, balances and messages, and the names and UPI IDs of its members.
 Nobody outside your groups can see them.</p>

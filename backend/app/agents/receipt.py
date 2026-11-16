@@ -1,5 +1,4 @@
 """Receipt Reader (vision) and Split Advisor (plain-language rules -> who shares which item)."""
-import base64
 import re
 import time
 
@@ -45,10 +44,8 @@ def read_receipt(ctx: Ctx, image: bytes) -> dict:
         return {"kind": "receipt", "ready": False, "error": "Receipt scanning needs a connection. Add the items by hand for now."}
     ctx.step(agent, "Reading the bill")
     try:
-        out = run_llm(ctx, agent=agent, system=_RECEIPT_SYSTEM, schema=_RECEIPT_SCHEMA, smart=True, content=[
-            {"type": "image", "source": {"type": "base64", "media_type": media,
-                                         "data": base64.standard_b64encode(image).decode()}},
-            {"type": "text", "text": "Read this bill."}])
+        out = run_llm(ctx, agent=agent, system=_RECEIPT_SYSTEM, schema=_RECEIPT_SCHEMA, smart=True,
+                      content=[{"image": image, "media_type": media}, "Read this bill."])
     except AgentFailure:
         log_run(ctx, agent, "[image]", {}, "error", started)
         return {"kind": "receipt", "ready": False, "error": "I couldn't read that bill. Try a clearer photo, or add the items by hand."}
