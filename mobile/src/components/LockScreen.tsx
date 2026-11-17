@@ -24,6 +24,13 @@ export function LockHost() {
   const pulse = useSharedValue(0);
   const shake = useSharedValue(0);
   const active = enabled && signedIn && Platform.OS !== 'web';
+  // Switching the lock on in settings already asked for a fingerprint, so don't ask again straight away.
+  // (This component mounts after saved settings load, so the first value is the saved one, not a switch.)
+  const wasEnabled = useRef(enabled);
+  useEffect(() => {
+    if (enabled && !wasEnabled.current) setLocked(false);
+    wasEnabled.current = enabled;
+  }, [enabled]);
 
   useEffect(() => {
     pulse.value = withRepeat(withSequence(withTiming(1, { duration: 1100 }), withTiming(0, { duration: 1100 })), -1);

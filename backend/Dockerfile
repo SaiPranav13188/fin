@@ -10,6 +10,8 @@ COPY app ./app
 RUN useradd -m fin && chown -R fin /app
 USER fin
 ENV FIN_ENV=prod PATH="/app/.venv/bin:$PATH"
+# "Today" means today in India (UTC+5:30). A POSIX zone string, so the slim image needs no tzdata.
+ENV TZ=IST-5:30
 EXPOSE 8000
 # Run migrations, then serve. One worker: the WebSocket hub and scheduler are in-process.
 CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips='*'"]
