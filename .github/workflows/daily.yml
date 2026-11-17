@@ -15,7 +15,8 @@ jobs:
       - name: Run the daily reminder check
         env:
           CRON_SECRET: ${{ secrets.FIN_CRON_SECRET }}
-          API_URL: ${{ vars.API_URL }}
+          API_URL: ${{ vars.API_URL || 'https://fin-api-thay.onrender.com' }}
         run: |
+          if [ -z "$CRON_SECRET" ] || [ -z "$API_URL" ]; then echo "Daily reminders are not set up yet (add the FIN_CRON_SECRET secret and API_URL variable)."; exit 0; fi
           curl -sf --max-time 120 "$API_URL/health" > /dev/null || sleep 40
           curl -sf --max-time 120 -X POST -H "X-Cron-Secret: $CRON_SECRET" "$API_URL/internal/daily"
