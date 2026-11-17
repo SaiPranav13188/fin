@@ -2,7 +2,7 @@
 import uuid
 from datetime import date, datetime, timezone
 
-from sqlalchemy import JSON, BigInteger, Boolean, Date, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import JSON, BigInteger, Boolean, Date, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .db import Base
@@ -98,6 +98,10 @@ class Expense(Base):
     split_type: Mapped[str] = mapped_column(String(12))
     note: Mapped[str | None] = mapped_column(String(280), nullable=True)
     created_via: Mapped[str] = mapped_column(String(12), default="manual")  # manual|text|voice|receipt|recurring
+    # Foreign-currency expenses keep what was really paid; amount_paise is the INR value used for balances.
+    currency: Mapped[str] = mapped_column(String(3), default="INR", server_default="INR")
+    original_minor: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    fx_rate: Mapped[float | None] = mapped_column(Float, nullable=True)
     created_by: Mapped[str | None] = mapped_column(String(32), nullable=True)
     spent_on: Mapped[date] = mapped_column(Date, default=lambda: now().date())
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, index=True)
@@ -127,6 +131,30 @@ class Item(Base):
     name: Mapped[str] = mapped_column(String(80))
     amount_paise: Mapped[int] = mapped_column(BigInteger)
     member_ids: Mapped[list[str]] = mapped_column(JSON, default=list)  # item_members, kept inline
+
+
+class Goal(Base):
+    """A shared savings target for a group, like a trip fund. Fin only tracks it; the money stays with people."""
+    __tablename__ = "goals"
+    id: Mapped[str] = pk()
+    group_id: Mapped[str] = fk("groups.id")
+    name: Mapped[str] = mapped_column(String(60))
+    emoji: Mapped[str] = mapped_column(String(16), default="🎯")
+    target_paise: Mapped[int] = mapped_column(BigInteger)
+    keeper_member: Mapped[str] = mapped_column(String(32))  # who holds the money; contributions are paid to them
+    due_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    contributions: Mapped[list["GoalContribution"]] = relationship(cascade="all, delete-orphan", lazy="selectin",
+                                                                   order_by="GoalContribution.created_at")
+
+
+class GoalContribution(Base):
+    __tablename__ = "goal_contributions"
+    id: Mapped[str] = pk()
+    goal_id: Mapped[str] = fk("goals.id")
+    member_id: Mapped[str] = mapped_column(String(32))
+    amount_paise: Mapped[int] = mapped_column(BigInteger)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
 
 
 class Settlement(Base):

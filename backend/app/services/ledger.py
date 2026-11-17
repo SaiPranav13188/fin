@@ -84,7 +84,30 @@ def expense_out(e: Expense) -> ExpenseOut:
         payers={p.member_id: p.amount_paise for p in e.payers},
         shares={s.member_id: s.amount_paise for s in e.shares},
         items=[ItemIn(name=i.name, amount_paise=i.amount_paise, member_ids=i.member_ids) for i in e.items],
+        currency=e.currency or "INR", original_minor=e.original_minor, fx_rate=e.fx_rate,
     )
+
+
+def convert_currency(body: ExpenseIn) -> float | None:
+    """For a foreign-currency expense, sets body.amount_paise from today's rate. Returns the rate used."""
+    from . import fx
+    cur = (body.currency or "INR").upper()
+    body.currency = cur
+    if cur == "INR":
+        body.original_minor = None
+        return None
+    if not body.original_minor:
+        raise HTTPException(422, "Enter the amount in " + cur)
+    if body.split_type in ("exact", "itemised"):
+        raise HTTPException(422, "For other currencies, split equally, by shares or by percent")
+    try:
+        paise, rate, _ = fx.to_paise(body.original_minor, cur)
+    except fx.FxError as err:
+        raise HTTPException(503, str(err)) from err
+    body.amount_paise = max(paise, 1)
+    payer = next(iter(body.payers), None)
+    body.payers = {payer: body.amount_paise} if payer else {}  # one payer: the INR total is theirs
+    return rate
 
 
 def resolve_expense(group: Group, me: Member, body: ExpenseIn) -> tuple[dict[str, int], dict[str, int]]:
@@ -123,10 +146,12 @@ def resolve_expense(group: Group, me: Member, body: ExpenseIn) -> tuple[dict[str
 
 def create_expense(db: Session, group: Group, me: Member, body: ExpenseIn, via: str = "manual",
                    commit: bool = True) -> Expense:
+    rate = convert_currency(body)
     payers, shares = resolve_expense(group, me, body)
     e = Expense(group_id=group.id, description=body.description.strip(), category=body.category,
                 amount_paise=body.amount_paise, split_type=body.split_type, note=body.note, created_via=via,
-                created_by=me.id, spent_on=body.spent_on or date.today())
+                created_by=me.id, spent_on=body.spent_on or date.today(),
+                currency=body.currency, original_minor=body.original_minor, fx_rate=rate)
     e.payers = [ExpensePayer(member_id=k, amount_paise=v) for k, v in payers.items()]
     e.shares = [Share(member_id=k, amount_paise=v) for k, v in shares.items() if v]
     e.items = [Item(name=i.name, amount_paise=i.amount_paise, member_ids=i.member_ids) for i in body.items or []]
@@ -151,6 +176,9 @@ def delete_group_data(db: Session, group: Group) -> None:
     """Deletes a group and everything in it, children first, so Postgres foreign keys are never violated."""
     for e in db.scalars(select(Expense).where(Expense.group_id == group.id)).all():
         db.delete(e)  # payers, shares and items go with it
+    from ..models import Goal
+    for gl in db.scalars(select(Goal).where(Goal.group_id == group.id)).all():
+        db.delete(gl)
     for model in (Settlement, Message, RecurringExpense, AgentDraft):
         db.query(model).filter(model.group_id == group.id).delete(synchronize_session=False)
     db.flush()

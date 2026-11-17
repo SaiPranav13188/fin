@@ -204,3 +204,41 @@ def test_monthly_wrapped(sai, trip):
     assert sai.get("/me/wrapped?month=nope").status_code == 422
     from tests.conftest import Api
     assert Api(sai.c, "Eve").get("/me/wrapped").json()["has_data"] is False
+
+
+def test_goals(client, sai, trip):
+    g, ids = trip
+    gid = g["id"]
+    goal = sai.post(f"/groups/{gid}/goals", json={"name": "Goa fund", "emoji": "🏖️", "target_paise": 2000000}).json()
+    assert goal["saved_paise"] == 0 and goal["keeper_member"] == ids["Sai"] and goal["keeper_upi_link"].startswith("upi://pay?pa=sai@okbank")
+    sai.post(f"/goals/{goal['id']}/contributions", json={"amount_paise": 500000})
+    r = sai.post(f"/goals/{goal['id']}/contributions", json={"member_id": ids["Rahul"], "amount_paise": 1500000}).json()
+    assert r["saved_paise"] == 2000000 and r["reached"] and r["by_member"] == {ids["Sai"]: 500000, ids["Rahul"]: 1500000}
+    assert r["keeper_upi_link"] is None  # nothing left to pay in
+    assert sai.post(f"/groups/{gid}/goals", json={"name": "x", "target_paise": 100, "keeper_member": "nope"}).status_code == 422
+    from tests.conftest import Api
+    eve = Api(client, "Eve")
+    assert eve.get(f"/groups/{gid}/goals").status_code == 404
+    assert eve.post(f"/goals/{goal['id']}/contributions", json={"amount_paise": 100}).status_code == 404
+    assert sai.get(f"/groups/{gid}/balances").json()["all_settled"]  # goals never touch balances
+    assert sai.delete(f"/goals/{goal['id']}").status_code == 204 and sai.get(f"/groups/{gid}/goals").json() == []
+
+
+def test_foreign_currency(sai, trip, monkeypatch):
+    from app.services import fx
+    g, ids = trip
+    gid = g["id"]
+    monkeypatch.setattr(fx, "rate_to_inr", lambda c: (90.0, "2026-11-16") if c == "USD" else (_ for _ in ()).throw(fx.FxError("That currency isn't supported yet")))
+    r = sai.post(f"/groups/{gid}/expenses", json={"description": "Dinner in Bali", "amount_paise": 1, "currency": "USD", "original_minor": 3000,
+                                                   "payers": {ids["Rahul"]: 1}})
+    assert r.status_code == 201, r.text
+    e = r.json()
+    assert e["amount_paise"] == 270000 and e["currency"] == "USD" and e["original_minor"] == 3000 and e["fx_rate"] == 90.0
+    assert e["payers"] == {ids["Rahul"]: 270000} and sum(e["shares"].values()) == 270000
+    bad = sai.post(f"/groups/{gid}/expenses", json={"description": "x", "amount_paise": 1, "currency": "USD", "original_minor": 100, "split_type": "exact", "exact": {ids["Sai"]: 1}})
+    assert bad.status_code == 422
+    assert sai.post(f"/groups/{gid}/expenses", json={"description": "x", "amount_paise": 1, "currency": "XYZ", "original_minor": 100}).status_code == 503
+    jpy = fx.to_paise.__wrapped__ if hasattr(fx.to_paise, "__wrapped__") else None
+    assert jpy is None  # plain function
+    monkeypatch.setattr(fx, "rate_to_inr", lambda c: (0.6, "2026-11-16"))
+    assert fx.to_paise(1000, "JPY")[0] == 60000  # yen has no minor unit: ¥1000 -> ₹600

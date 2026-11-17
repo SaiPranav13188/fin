@@ -11,7 +11,7 @@ from .config import get_settings
 from .db import Base, SessionLocal, engine, get_db
 from .models import AgentRun
 from .privacy import PRIVACY_HTML
-from .routers import agents, auth, groups, tracking
+from .routers import agents, auth, goals, groups, tracking
 
 log = logging.getLogger("fin")
 settings = get_settings()
@@ -63,7 +63,7 @@ async def unhandled(request: Request, exc: Exception):
     return JSONResponse({"detail": "Something went wrong on our side. Please try again."}, status_code=500)
 
 
-for r in (auth.router, groups.router, tracking.router, agents.router):
+for r in (auth.router, groups.router, goals.router, tracking.router, agents.router):
     app.include_router(r)
 
 

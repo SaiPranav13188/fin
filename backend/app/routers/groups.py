@@ -253,7 +253,9 @@ def edit_expense(group_id: str, expense_id: str, body: ExpenseIn, user: User = D
     from ..models import ExpensePayer, Item, Share
     g, me = ledger.get_group(db, user, group_id)
     e = _own_expense(db, group_id, expense_id)
+    rate = ledger.convert_currency(body)
     payers, shares = ledger.resolve_expense(g, me, body)
+    e.currency, e.original_minor, e.fx_rate = body.currency, body.original_minor, rate
     e.description, e.category, e.amount_paise = body.description.strip(), body.category, body.amount_paise
     e.split_type, e.note = body.split_type, body.note
     if body.spent_on:

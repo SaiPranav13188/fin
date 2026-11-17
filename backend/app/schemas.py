@@ -134,6 +134,9 @@ class ExpenseIn(BaseModel):
     items: list[ItemIn] | None = None
     note: str | None = Field(default=None, max_length=280)
     spent_on: date | None = None
+    # Paid abroad? Send the currency and the amount in its smallest unit; the server converts to INR.
+    currency: str = Field(default="INR", min_length=3, max_length=3)
+    original_minor: int | None = Field(default=None, gt=0)
 
 
 class ExpenseOut(BaseModel):
@@ -150,6 +153,9 @@ class ExpenseOut(BaseModel):
     payers: dict[str, int]
     shares: dict[str, int]
     items: list[ItemIn]
+    currency: str = "INR"
+    original_minor: int | None = None
+    fx_rate: float | None = None
     settled_member_ids: list[str] = []
 
 
@@ -231,6 +237,19 @@ class ReminderOut(ORM):
     due_at: date
     message: str
     status: str
+
+
+class GoalIn(BaseModel):
+    name: str = Field(min_length=1, max_length=60)
+    emoji: str = Field(default="🎯", max_length=16)
+    target_paise: Paise = Field(gt=0, le=1_00_00_000_00)
+    keeper_member: str | None = None  # default: the person creating it
+    due_on: date | None = None
+
+
+class ContributionIn(BaseModel):
+    member_id: str | None = None  # default: yourself
+    amount_paise: Paise = Field(gt=0)
 
 
 class RecurringIn(BaseModel):

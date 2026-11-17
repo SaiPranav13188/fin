@@ -1,0 +1,21 @@
+name: Daily reminders
+# The free Render server sleeps, so its own 9 AM timer can miss. This wakes it and runs the reminder check.
+on:
+  schedule:
+    - cron: "30 3 * * *" # 09:00 IST
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run the daily reminder check
+        env:
+          CRON_SECRET: ${{ secrets.FIN_CRON_SECRET }}
+          API_URL: ${{ vars.API_URL }}
+        run: |
+          curl -sf --max-time 120 "$API_URL/health" > /dev/null || sleep 40
+          curl -sf --max-time 120 -X POST -H "X-Cron-Secret: $CRON_SECRET" "$API_URL/internal/daily"
