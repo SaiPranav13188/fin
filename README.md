@@ -7,6 +7,11 @@ reacts to every step.
 
 Fin never holds or moves money. Paying opens GPay, PhonePe or Paytm with the details filled in.
 
+### 👉 [Try the live demo](https://saipranav13188.github.io/fin-showcase/)
+
+No sign-up or install: open the link and tap **"Try the live demo"** to get your own sample account with friends, groups and
+expenses (it resets after 24 hours). The first load can take up to a minute while the free server wakes up.
+
 > The source is public so the work can be read and evaluated. It is **not open source**: see [LICENSE](LICENSE).
 
 ## What is in this repository
