@@ -12,6 +12,7 @@ from ..config import get_settings
 from ..db import get_db
 from ..models import PasswordReset, RefreshToken, User
 from ..schemas import ForgotIn, LoginIn, RefreshIn, ResetIn, SignupIn, TokenOut, UserOut, UserPatch
+from ..services.demo import create_demo_user, delete_account
 from ..services.mailer import mail_enabled, send_mail
 from ..security import (check_rate, client_ip, current_user, hash_password, issue_refresh_token, make_access_token,
                         revoke_refresh_token, rotate_refresh_token, verify_password)
@@ -50,6 +51,16 @@ def login(body: LoginIn, request: Request, db: Session = Depends(get_db)):
     ok = verify_password(body.password, user.password_hash if user else _DUMMY)
     if not user or not ok:
         raise HTTPException(401, "Wrong email or password")
+    return _tokens(db, user.id)
+
+
+@router.post("/demo", response_model=TokenOut, status_code=201)
+def demo(request: Request, db: Session = Depends(get_db)):
+    """A fresh sample account for trying Fin without signing up. It is deleted after 24 hours."""
+    ip = client_ip(request)
+    check_rate(f"demo:{ip}", 5)
+    check_rate(f"demo-hour:{ip}", 20, window=3600)
+    user = create_demo_user(db)
     return _tokens(db, user.id)
 
 
@@ -145,18 +156,5 @@ def delete_me(user: User = Depends(current_user), db: Session = Depends(get_db))
     Shared groups stay for the friends who still use them, with this person shown as "Former member".
     A group passes to another member who has an account; a group nobody else uses is deleted.
     """
-    from ..models import AgentDraft, AgentRun, Group, Member
-    from ..services.ledger import delete_group_data
-    for g in db.scalars(select(Group).where(Group.owner_id == user.id)).all():
-        heir = next((m for m in g.members if m.user_id and m.user_id != user.id and m.active), None)
-        if heir:
-            g.owner_id = heir.user_id
-        else:
-            delete_group_data(db, g)
-    db.flush()
-    for m in db.scalars(select(Member).where(Member.user_id == user.id)):
-        m.user_id, m.upi_id, m.verified, m.name = None, None, False, "Former member"
-    db.query(AgentRun).filter(AgentRun.user_id == user.id).delete(synchronize_session=False)
-    db.query(AgentDraft).filter(AgentDraft.user_id == user.id).delete(synchronize_session=False)
-    db.delete(db.get(User, user.id))
+    delete_account(db, db.get(User, user.id))
     db.commit()

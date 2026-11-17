@@ -108,4 +108,6 @@ def daily_job(db: Session) -> dict:
             if user.push_token:
                 pushes.append((user.push_token, r.message))
     send_push(pushes)
-    return {"recurring_created": made, "pushes": len(pushes)}
+    from ..services.demo import cleanup_expired
+    demos = cleanup_expired(db, limit=1000)
+    return {"recurring_created": made, "pushes": len(pushes), "demos_deleted": demos}

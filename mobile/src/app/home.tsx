@@ -13,6 +13,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Mascot, Mood } from '@/components/Mascot';
 import { Avatar, Card, Empty, Press, RollingNumber, Skeleton, T } from '@/components/ui';
 import { ApiError, api } from '@/lib/api';
+import { isDemoEmail } from '@/lib/demo';
 import { queryClient, refreshAll, useGroups, useMe, useMonthSpend, useReminders, useSummary } from '@/lib/hooks';
 import { flushQueue, useQueue } from '@/lib/offline';
 import { registerForPush } from '@/lib/push';
@@ -150,6 +151,13 @@ export default function Home() {
           </View>
           <Press onPress={() => router.push('/profile')} label="Profile"><Avatar name={me.data?.name ?? '?'} index={1} size={46} /></Press>
         </Animated.View>
+
+        {isDemoEmail(me.data?.email) ? (
+          <Press onPress={() => useStore.getState().setTokens(null, null)} style={{ backgroundColor: colors.amberSoft, borderRadius: radius.md, padding: 12 }} label="Leave demo">
+            <T v="small" w="bold">{t("✨ You're trying a demo with sample friends. Add expenses, chat with Fin, settle up. It resets in 24 hours.")}</T>
+            <T v="small" color={colors.purple} w="bold" style={{ marginTop: 4 }}>{t("Leave demo and create your own account ›")}</T>
+          </Press>
+        ) : null}
 
         {waiting ? (
           <Press onPress={() => flushQueue(refreshAll)} style={{ backgroundColor: colors.amberSoft, borderRadius: radius.pill, paddingVertical: 10, paddingHorizontal: 16, alignSelf: 'center' }} label="Sync now">

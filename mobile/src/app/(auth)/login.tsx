@@ -7,6 +7,7 @@ import Animated, { FadeInDown, LinearTransition } from 'react-native-reanimated'
 import { Mascot, Mood } from '@/components/Mascot';
 import { Btn, Field, Press, Screen, T } from '@/components/ui';
 import { ApiError, api } from '@/lib/api';
+import { startDemo } from '@/lib/demo';
 import { useStore } from '@/lib/store';
 import { colors } from '@/lib/theme';
 import { haptic } from '@/lib/util';
@@ -27,6 +28,20 @@ export default function Login() {
   // Fin covers its eyes while you type your password.
   const mood: Mood = error ? 'worried' : focus === 'password' ? 'covering' : focus === 'text' ? 'happy' : 'idle';
   const speech = error ?? (focus === 'password' ? t("Not peeking, promise 🙈") : mode === 'signup' ? t("Nice to meet you!") : t("Welcome back!"));
+
+  const tryDemo = async () => {
+    setError(null);
+    setBusy(true);
+    try {
+      await startDemo();
+      haptic.success();
+    } catch (e) {
+      haptic.error();
+      setError(e instanceof ApiError ? e.message : 'Could not start the demo.');
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const submit = async () => {
     setError(null);
@@ -79,6 +94,7 @@ export default function Login() {
           <Press onPress={() => { setMode(mode === 'signup' ? 'login' : 'signup'); setError(null); }} style={{ alignSelf: 'center', padding: 10 }}>
             <T v="small" w="bold" color={colors.purple}>{mode === 'signup' ? t("I already have an account") : t("New here? Create an account")}</T>
           </Press>
+          <Btn title={t("Just looking? Try the demo")} kind="soft" icon="✨" onPress={tryDemo} disabled={busy} />
           <T v="small" color={colors.inkFaint} center>{t("Fin never holds your money or asks for your UPI PIN.")}</T>
       </KeyboardAwareScrollView>
     </Screen>

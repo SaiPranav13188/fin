@@ -10,6 +10,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 import { Mascot, Mood } from '@/components/Mascot';
 import { Confetti, PizzaChart, SwipeToPay } from '@/components/fx';
 import { Avatar, Btn, Press, T } from '@/components/ui';
+import { startDemo } from '@/lib/demo';
 import { useStore } from '@/lib/store';
 import { colors, spring } from '@/lib/theme';
 import { haptic } from '@/lib/util';
@@ -24,6 +25,7 @@ export default function Welcome() {
   const [mood, setMood] = useState<Mood>('sleepy');
   const [slices, setSlices] = useState(1);
   const [paid, setPaid] = useState(0);
+  const [demoBusy, setDemoBusy] = useState(false);
   const lookX = useSharedValue(0);
   const lookY = useSharedValue(0);
   const burst = useSharedValue(0);
@@ -47,6 +49,18 @@ export default function Welcome() {
   const finish = () => {
     setSetting('onboarded', true);
     router.push('/login');
+  };
+
+  const tryDemo = async () => {
+    setDemoBusy(true);
+    try {
+      await startDemo();
+      haptic.success();
+    } catch (e: any) {
+      useStore.getState().showToast(e?.message ?? 'Could not start the demo. Please try again.', 'warn');
+    } finally {
+      setDemoBusy(false);
+    }
   };
 
   const addSlice = () => {
@@ -108,6 +122,7 @@ export default function Welcome() {
               <T color={colors.inkSoft} center>{t("Tell Fin what happened. It splits the bill, reminds your friends and helps you settle up.")}</T>
               <View style={{ height: 8 }} />
               <Btn title={t("Get started")} onPress={finish} style={{ alignSelf: 'stretch' }} />
+              <Btn title={t("Try the demo, no sign-up")} kind="soft" icon="✨" onPress={tryDemo} loading={demoBusy} style={{ alignSelf: 'stretch' }} />
               <Btn title={t("I already have an account")} kind="ghost" onPress={() => router.push({ pathname: '/login', params: { mode: 'login' } })} />
             </Animated.View>
           )}
