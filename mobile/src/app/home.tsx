@@ -11,6 +11,7 @@ import Animated, {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Mascot, Mood } from '@/components/Mascot';
+import { TapHint } from '@/components/TapHint';
 import { Avatar, Card, Empty, Press, RollingNumber, Skeleton, T } from '@/components/ui';
 import { ApiError, api } from '@/lib/api';
 import { isDemoEmail } from '@/lib/demo';
@@ -308,7 +309,10 @@ export default function Home() {
       <View style={[styles.dock, { bottom: insets.bottom + 8 }]} pointerEvents="box-none">
         {ACTIONS.map((a, i) => <DockAction key={a.key} i={i} open={open} emoji={a.emoji} label={a.label} onPress={() => go(a.go)} />)}
         <Press onPress={() => { haptic.bump(); setOpen(!open); }} scaleTo={0.9} label="Open actions">
-          <Mascot size={104} mood={dockMood} lookX={tilt.x} lookY={tilt.y} hopKey={open ? 1 : 0} />
+          <View style={{ alignItems: 'center' }}>
+            {open ? null : <TapHint />}
+            <Mascot size={104} mood={dockMood} lookX={tilt.x} lookY={tilt.y} hopKey={open ? 1 : 0} />
+          </View>
         </Press>
       </View>
     </SafeAreaView>
