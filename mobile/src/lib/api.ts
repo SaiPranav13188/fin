@@ -70,6 +70,16 @@ export async function api<T = any>(path: string, opts: Opts = {}, retry = true):
   return body as T;
 }
 
+/** Adds a picked file to a form. Phones accept {uri,name,type}; browsers need the real bytes. */
+export async function appendFile(form: FormData, field: string, f: { uri: string; name: string; type: string }) {
+  if (Platform.OS === 'web') {
+    const blob = await (await fetch(f.uri)).blob();
+    form.append(field, blob, f.name);
+  } else {
+    form.append(field, { uri: f.uri, name: f.name, type: f.type } as any);
+  }
+}
+
 export type AgentEvent =
   | { type: 'step'; agent: string; label: string; tool?: string }
   | { type: 'result'; data: any }

@@ -10,7 +10,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 import { Mascot, Mood, Prop } from '@/components/Mascot';
 import { Confetti, ScanBeam } from '@/components/fx';
 import { Avatar, Btn, Chip, Press, Screen, T } from '@/components/ui';
-import { ApiError, Draft, Item, api } from '@/lib/api';
+import { ApiError, Draft, Item, api, appendFile } from '@/lib/api';
 import { refreshAll, useGroup, useGroups } from '@/lib/hooks';
 import { useStore } from '@/lib/store';
 import { colorFor, colors, font, radius, shadow, spring } from '@/lib/theme';
@@ -93,7 +93,7 @@ export default function Scan() {
     try {
       const form = new FormData();
       form.append('group_id', groupId!);
-      form.append('image', { uri: asset.uri, name: 'bill.jpg', type: asset.mimeType ?? 'image/jpeg' } as any);
+      await appendFile(form, 'image', { uri: asset.uri, name: 'bill.jpg', type: asset.mimeType ?? 'image/jpeg' });
       const d: Draft = await api('/agent/receipt', { form });
       if (d.error || !d.items?.length) { setError(d.error ?? "I couldn't read that bill."); haptic.warn(); } else { setDraft(d); setItems(d.items); haptic.success(); }
     } catch (e) {

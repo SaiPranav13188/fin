@@ -41,7 +41,7 @@ export default function Spending() {
     <Screen title="My payments">
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 14, paddingBottom: 40 }}>
         <View style={{ flexDirection: 'row', gap: 10 }}>
-          <Btn small title="Import statement" icon="📥" onPress={() => router.push('/import')} style={{ flex: 1 }} />
+          <Btn small title="Import" icon="📥" onPress={() => router.push('/import')} style={{ flex: 1 }} />
           <Btn small title="Add payment" icon="＋" kind="soft" onPress={() => gid && router.push({ pathname: '/add-expense', params: { group: gid } })} style={{ flex: 1 }} />
         </View>
         <T v="small" color={colors.inkSoft}>Payments you made outside your groups, like GPay, PhonePe, Paytm or card. They count in what you spent this month, and nobody else can see them.</T>

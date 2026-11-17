@@ -9,7 +9,7 @@ import Animated, { FadeIn, FadeInDown, FadeOut, LinearTransition, ZoomIn } from 
 import { Confetti } from '@/components/fx';
 import { Mascot, Mood } from '@/components/Mascot';
 import { Btn, Chip, Press, RollingNumber, Screen, T } from '@/components/ui';
-import { ApiError, api } from '@/lib/api';
+import { ApiError, api, appendFile } from '@/lib/api';
 import { refreshAll } from '@/lib/hooks';
 import { useStore } from '@/lib/store';
 import { CATEGORY, colors, radius, shadow } from '@/lib/theme';
@@ -56,7 +56,7 @@ export default function ImportScreen() {
     try {
       const form = new FormData();
       if (f.text) form.append('file', new Blob([f.text], { type: 'text/plain' }) as any, 'shared.txt');
-      else form.append('file', { uri: f.uri, name: f.name ?? 'statement', type: f.type ?? 'application/octet-stream' } as any);
+      else await appendFile(form, 'file', { uri: f.uri!, name: f.name ?? 'statement', type: f.type ?? 'application/octet-stream' });
       const r: Result = await api('/agent/statement', { form });
       setRes(r);
       if (r.payments?.length) {
@@ -117,7 +117,7 @@ export default function ImportScreen() {
 
       {step === 'consent' ? (
         <Animated.View entering={FadeInDown.springify()} style={{ flex: 1, gap: 14, paddingBottom: 20 }}>
-          <View style={{ alignItems: 'center' }}><Mascot size={110} mood="idle" prop="glasses" speech="Let's bring your payments in" /></View>
+          <View style={{ alignItems: 'center' }}><Mascot size={110} mood="idle" prop="glasses" /></View>
           <T v="h2">Before you import</T>
           <View style={styles.card}>
             <T w="semi">📄 CSV files are read on Fin's server by simple rules. No AI sees them.</T>
