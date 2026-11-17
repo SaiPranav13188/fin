@@ -15,6 +15,8 @@ import { Confetti } from '@/components/fx';
 import { Mascot } from '@/components/Mascot';
 import { LockHost } from '@/components/LockScreen';
 import { MomentHost, ToastHost } from '@/components/ui';
+import * as Sentry from '@sentry/react-native';
+
 import '@/lib/sentry';
 import { queryClient, refreshAll } from '@/lib/hooks';
 import { startQueueSync } from '@/lib/offline';
@@ -23,7 +25,7 @@ import { colors } from '@/lib/theme';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
-export default function RootLayout() {
+function RootLayout() {
   const [fontsLoaded] = useFonts({
     PlusJakartaSans_400Regular, PlusJakartaSans_500Medium, PlusJakartaSans_600SemiBold, PlusJakartaSans_700Bold, PlusJakartaSans_800ExtraBold,
   });
@@ -74,3 +76,6 @@ export default function RootLayout() {
     </GestureHandlerRootView>
   );
 }
+
+// Catches errors thrown while drawing a screen too, and shows a safe fallback instead of a blank app.
+export default Sentry.wrap(RootLayout);
