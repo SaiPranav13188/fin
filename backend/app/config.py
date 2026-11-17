@@ -36,7 +36,10 @@ class Settings(BaseSettings):
     max_receipt_bytes: int = 6_000_000
 
     enable_scheduler: bool = False
-    brevo_api_key: str = ""  # email for password reset; empty = reset is switched off
+    # Email for password reset (Mailjet, or Brevo). With neither set, password reset is switched off.
+    mailjet_api_key: str = ""
+    mailjet_secret_key: str = ""
+    brevo_api_key: str = ""
     mail_from: str = ""
     mail_from_name: str = "Fin"
     cron_secret: str = ""  # shared secret for /internal/* (empty = those routes are off)
