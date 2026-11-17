@@ -219,6 +219,10 @@ export default function Home() {
             ) : null}
           </Animated.View>
         </Press>
+        <View style={{ flexDirection: 'row', gap: 8, marginTop: -6 }}>
+          <Press onPress={() => router.push('/import')} style={styles.mini} label="Import payments from a statement"><T v="small" w="bold" color={colors.purple}>📥 Import payments</T></Press>
+          <Press onPress={() => router.push('/spending')} style={styles.mini} label="My payments"><T v="small" w="bold" color={colors.purple}>🧾 My payments</T></Press>
+        </View>
 
         {/* reminders strip: collapses away when empty */}
         {(reminders.data?.length ?? 0) > 0 ? (
@@ -305,6 +309,7 @@ export default function Home() {
 
 const styles = StyleSheet.create({
   spendCard: { backgroundColor: '#fff', borderRadius: radius.lg, padding: 16, gap: 4, ...shadow, shadowOpacity: 0.08 },
+  mini: { flex: 1, alignItems: 'center', backgroundColor: colors.purpleSoft, paddingVertical: 10, borderRadius: radius.pill },
   delta: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: radius.pill },
   balance: { borderRadius: radius.xl, padding: 22, gap: 8, overflow: 'hidden' },
   shine: { position: 'absolute', top: -40, left: 60, width: 70, height: 300, backgroundColor: 'rgba(255,255,255,0.13)' },

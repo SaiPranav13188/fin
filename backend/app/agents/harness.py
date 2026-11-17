@@ -169,7 +169,7 @@ _BLOCKED = {"SAFETY", "PROHIBITED_CONTENT", "BLOCKLIST", "SPII", "RECITATION", "
 
 def run_llm(ctx: Ctx, *, agent: str, system: str, content: list | str, schema: dict,
             tools: list[dict] | None = None, tool_impl: dict[str, Callable[..., Any]] | None = None,
-            smart: bool = False) -> dict:
+            smart: bool = False, max_tokens: int | None = None) -> dict:
     """Runs a bounded tool loop and returns data matching `schema`. Raises AgentFailure otherwise."""
     s = get_settings()
     if not llm_available():
@@ -195,7 +195,7 @@ def run_llm(ctx: Ctx, *, agent: str, system: str, content: list | str, schema: d
                 allowed = [SUBMIT] if steps >= s.agent_max_steps else None
                 config = types.GenerateContentConfig(
                     system_instruction=system + "\n\n" + GUARD_RULES,
-                    max_output_tokens=s.agent_max_output_tokens,
+                    max_output_tokens=max_tokens or s.agent_max_output_tokens,
                     tools=[types.Tool(function_declarations=declarations)],
                     tool_config=types.ToolConfig(function_calling_config=types.FunctionCallingConfig(
                         mode="ANY", allowed_function_names=allowed)),

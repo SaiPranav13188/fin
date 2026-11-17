@@ -21,6 +21,11 @@ h1{font-size:28px}h2{font-size:18px;margin-top:28px}li{margin:6px 0}small{color:
 <h2>Crash reports</h2>
 <p>If the app or server crashes, a technical error report is sent to our crash-reporting service (Sentry). It includes
 the error, your phone model and app version. It does not include your name, email, passwords, messages or amounts.</p>
+<h2>Statements you import</h2>
+<p>If you import a payment statement, a CSV file is read on our server by simple rules, with no AI. A PDF or screenshot is sent to
+our AI provider (Google Gemini) to be read. We do not keep the file, only the payments you choose to add. Because Fin uses
+Google's free AI plan, Google may use that content to improve its products, so import PDFs or screenshots only if you are
+comfortable with that. CSV import never leaves our server.</p>
 <h2>AI processing</h2>
 <p>To draft expenses, read receipts and answer questions, the text or photo you submit is sent to our AI provider
 (Google, through the Gemini API) for processing. Fin uses it only to produce your result, never for advertising. Google may use

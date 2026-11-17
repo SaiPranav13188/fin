@@ -32,6 +32,28 @@ def user_groups(db: Session, user: User) -> list[tuple[Group, Member]]:
     return [(g, m) for g, m in rows]
 
 
+def personal_group(db: Session, user: User) -> tuple[Group, Member]:
+    """The user's private "My spending" ledger: a one-person group holding payments made outside Fin.
+    Created on first use. It never shows in the group list and can never owe or be owed anything."""
+    row = db.execute(select(Group, Member).join(Member, Member.group_id == Group.id)
+                     .where(Member.user_id == user.id, Group.kind == "personal", Group.owner_id == user.id)).first()
+    if row:
+        return row[0], row[1]
+    g = Group(name="My spending", emoji="💸", kind="personal", owner_id=user.id)
+    me = Member(user_id=user.id, name=user.name, upi_id=user.upi_id, verified=True)
+    g.members = [me]
+    db.add(g)
+    db.commit()
+    return g, me
+
+
+def fingerprint(day: date, paise: int, merchant: str, ref: str | None = None) -> str:
+    import hashlib
+    import re as _re
+    norm = _re.sub(r"[^a-z0-9]", "", merchant.lower())[:40]
+    return hashlib.sha1(f"{day.isoformat()}|{paise}|{norm}|{(ref or '').strip().lower()}".encode()).hexdigest()[:40]
+
+
 def expense_dicts(db: Session, group_id: str) -> list[dict]:
     exps = db.scalars(select(Expense).where(Expense.group_id == group_id)).all()
     return [{"payers": {p.member_id: p.amount_paise for p in e.payers},
@@ -145,19 +167,20 @@ def resolve_expense(group: Group, me: Member, body: ExpenseIn) -> tuple[dict[str
 
 
 def create_expense(db: Session, group: Group, me: Member, body: ExpenseIn, via: str = "manual",
-                   commit: bool = True) -> Expense:
+                   commit: bool = True, card: bool = True, external_ref: str | None = None) -> Expense:
     rate = convert_currency(body)
     payers, shares = resolve_expense(group, me, body)
     e = Expense(group_id=group.id, description=body.description.strip(), category=body.category,
                 amount_paise=body.amount_paise, split_type=body.split_type, note=body.note, created_via=via,
                 created_by=me.id, spent_on=body.spent_on or date.today(),
-                currency=body.currency, original_minor=body.original_minor, fx_rate=rate)
+                currency=body.currency, original_minor=body.original_minor, fx_rate=rate, external_ref=external_ref)
     e.payers = [ExpensePayer(member_id=k, amount_paise=v) for k, v in payers.items()]
     e.shares = [Share(member_id=k, amount_paise=v) for k, v in shares.items() if v]
     e.items = [Item(name=i.name, amount_paise=i.amount_paise, member_ids=i.member_ids) for i in body.items or []]
     db.add(e)
     db.flush()
-    db.add(Message(group_id=group.id, sender_member=me.id, body=e.description, kind="split_card", ref_id=e.id))
+    if card:
+        db.add(Message(group_id=group.id, sender_member=me.id, body=e.description, kind="split_card", ref_id=e.id))
     if commit:
         db.commit()
     return e

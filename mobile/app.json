@@ -121,6 +121,15 @@
             }
           ]
         }
+      ],
+      [
+        "expo-share-intent",
+        {
+          "androidIntentFilters": [
+            "*/*"
+          ],
+          "disableIOS": true
+        }
       ]
     ],
     "experiments": {

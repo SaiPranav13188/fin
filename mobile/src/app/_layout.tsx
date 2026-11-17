@@ -5,6 +5,7 @@ import {
 import { QueryClientProvider } from '@tanstack/react-query';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import { ShareIntentProvider, useShareIntentContext } from 'expo-share-intent';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect } from 'react';
 import { AccessibilityInfo } from 'react-native';
@@ -24,6 +25,21 @@ import { useStore } from '@/lib/store';
 import { colors } from '@/lib/theme';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
+
+/** Something shared to Fin from another app (a receipt screenshot, a statement PDF, copied payment text) opens Import. */
+function ShareHandler() {
+  const { hasShareIntent, shareIntent, resetShareIntent } = useShareIntentContext();
+  const access = useStore((s) => s.access);
+  const router = useRouter();
+  useEffect(() => {
+    if (!hasShareIntent || !access) return;
+    const f = shareIntent.files?.[0];
+    if (f) router.push({ pathname: '/import', params: { uri: f.path, name: f.fileName, mime: f.mimeType } });
+    else if (shareIntent.text) router.push({ pathname: '/import', params: { text: shareIntent.text.slice(0, 4000) } });
+    resetShareIntent();
+  }, [hasShareIntent, access]);
+  return null;
+}
 
 function RootLayout() {
   const [fontsLoaded] = useFonts({
@@ -59,6 +75,8 @@ function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.bg }}>
       <SafeAreaProvider>
+        <ShareIntentProvider options={{ resetOnBackground: true }}>
+        <ShareHandler />
         <QueryClientProvider client={queryClient}>
           <StatusBar style="dark" />
           {/* key: changing the language redraws every screen in the new language */}
@@ -72,6 +90,7 @@ function RootLayout() {
           <LockHost />
           <MomentHost mascot={<Mascot size={120} mood="cheer" />} confetti={(fire) => <Confetti fire={fire} coins />} />
         </QueryClientProvider>
+        </ShareIntentProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

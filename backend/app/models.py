@@ -102,6 +102,8 @@ class Expense(Base):
     currency: Mapped[str] = mapped_column(String(3), default="INR", server_default="INR")
     original_minor: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     fx_rate: Mapped[float | None] = mapped_column(Float, nullable=True)
+    # Set for payments imported from a statement or receipt: a fingerprint, so importing the same payment twice adds it once.
+    external_ref: Mapped[str | None] = mapped_column(String(40), nullable=True, index=True)
     created_by: Mapped[str | None] = mapped_column(String(32), nullable=True)
     spent_on: Mapped[date] = mapped_column(Date, default=lambda: now().date())
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, index=True)

@@ -82,6 +82,7 @@ export default function Insights() {
             </LinearGradient>
           </Press>
         ) : null}
+        <Press onPress={() => router.push('/spending')} label="Manage my payments"><T v="small" w="bold" color={colors.purple}>🧾 Manage payments I imported or added ›</T></Press>
         {trends.map((c, i) => (
           <Animated.View key={c.text} entering={FadeInDown.delay(i * 90).springify().damping(14)}
             style={{ flexDirection: 'row', gap: 12, alignItems: 'center', padding: 14, borderRadius: radius.md, backgroundColor: c.tone === 'up' ? colors.coralSoft : c.tone === 'down' ? colors.mintSoft : colors.purpleSoft }}>

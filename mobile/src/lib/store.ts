@@ -20,8 +20,8 @@ export const kv = {
 };
 
 export type Outfit = 'none' | 'cap' | 'party' | 'scarf';
-export type Settings = { haptics: boolean; sound: boolean; reduceMotion: boolean; onboarded: boolean; lang: 'en' | 'hi' | 'te'; lock: boolean; upiApp: 'ask' | 'gpay' | 'phonepe' | 'paytm' | 'bhim' | 'cred'; outfit: Outfit; earned: string[]; billsPaid: number };
-const defaultSettings: Settings = { haptics: true, sound: false, reduceMotion: false, onboarded: false, lang: 'en', lock: false, upiApp: 'ask', outfit: 'none', earned: [], billsPaid: 0 };
+export type Settings = { haptics: boolean; sound: boolean; reduceMotion: boolean; onboarded: boolean; lang: 'en' | 'hi' | 'te'; lock: boolean; statementConsent: boolean; upiApp: 'ask' | 'gpay' | 'phonepe' | 'paytm' | 'bhim' | 'cred'; outfit: Outfit; earned: string[]; billsPaid: number };
+const defaultSettings: Settings = { haptics: true, sound: false, reduceMotion: false, onboarded: false, lang: 'en', lock: false, statementConsent: false, upiApp: 'ask', outfit: 'none', earned: [], billsPaid: 0 };
 
 type Toast = { id: number; text: string; tone: 'ok' | 'warn' | 'info' };
 export type Moment = { key: string; title: string; sub: string; unlocks?: Outfit };

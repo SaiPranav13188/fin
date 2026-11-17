@@ -4,7 +4,7 @@ os.environ["FIN_ENV"] = "test"
 # CI also runs the suite on Postgres by setting TEST_DATABASE_URL.
 os.environ["FIN_DATABASE_URL"] = os.environ.get("TEST_DATABASE_URL", "sqlite:///:memory:")
 os.environ["FIN_GEMINI_API_KEY"] = ""  # tests never call the real model
-for name in ("FIN_MAILJET_API_KEY", "FIN_MAILJET_SECRET_KEY", "FIN_BREVO_API_KEY", "FIN_MAIL_FROM", "FIN_CRON_SECRET"):
+for name in ("FIN_MAILJET_API_KEY", "FIN_MAILJET_SECRET_KEY", "FIN_BREVO_API_KEY", "FIN_MAIL_FROM", "FIN_CRON_SECRET", "FIN_SENTRY_DSN"):
     os.environ[name] = ""  # tests never send real email or use real secrets
 os.environ["FIN_RATE_LOGIN_PER_MINUTE"] = "100000"
 os.environ["FIN_RATE_AGENT_PER_MINUTE"] = "100000"

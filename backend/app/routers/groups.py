@@ -80,7 +80,7 @@ async def group_ws(ws: WebSocket, group_id: str, token: str = Query("")):
 # ---- groups ----
 @router.get("/groups", response_model=list[GroupOut])
 def list_groups(user: User = Depends(current_user), db: Session = Depends(get_db)):
-    return [ledger.group_out(db, g, m) for g, m in ledger.user_groups(db, user)]
+    return [ledger.group_out(db, g, m) for g, m in ledger.user_groups(db, user) if g.kind != "personal"]
 
 
 @router.post("/groups", response_model=GroupOut, status_code=201)

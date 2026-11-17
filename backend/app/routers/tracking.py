@@ -96,7 +96,8 @@ def summary(user: User = Depends(current_user), db: Session = Depends(get_db)):
         bal = ledger.group_net(db, g).get(me.id, 0)
         owed += max(bal, 0)
         owe += max(-bal, 0)
-        groups.append({"id": g.id, "name": g.name, "emoji": g.emoji, "balance_paise": bal})
+        if g.kind != "personal":
+            groups.append({"id": g.id, "name": g.name, "emoji": g.emoji, "balance_paise": bal})
         for e in db.scalars(select(Expense).where(Expense.group_id == g.id, Expense.spent_on >= month)):
             mine = next((s.amount_paise for s in e.shares if s.member_id == me.id), 0)
             if mine:
