@@ -15,6 +15,7 @@ import { Confetti } from '@/components/fx';
 import { Mascot } from '@/components/Mascot';
 import { LockHost } from '@/components/LockScreen';
 import { MomentHost, ToastHost } from '@/components/ui';
+import '@/lib/sentry';
 import { queryClient, refreshAll } from '@/lib/hooks';
 import { startQueueSync } from '@/lib/offline';
 import { useStore } from '@/lib/store';

@@ -18,6 +18,9 @@ h1{font-size:28px}h2{font-size:18px;margin-top:28px}li{margin:6px 0}small{color:
 <li><b>Voice:</b> speech is turned into text on your phone by your phone's speech service. Fin's servers receive only the text.</li>
 <li><b>Assistant requests:</b> text you send to the assistant, and the draft it produced, are logged so we can check accuracy and prevent abuse.</li>
 <li><b>Push token:</b> if you allow notifications, a device token so we can send reminders.</li></ul>
+<h2>Crash reports</h2>
+<p>If the app or server crashes, a technical error report is sent to our crash-reporting service (Sentry). It includes
+the error, your phone model and app version. It does not include your name, email, passwords, messages or amounts.</p>
 <h2>AI processing</h2>
 <p>To draft expenses, read receipts and answer questions, the text or photo you submit is sent to our AI provider
 (Google, through the Gemini API) for processing. Fin uses it only to produce your result, never for advertising. Google may use

@@ -16,6 +16,24 @@ from .routers import agents, auth, goals, groups, tracking
 log = logging.getLogger("fin")
 settings = get_settings()
 
+if settings.sentry_dsn:  # crash reports; off unless FIN_SENTRY_DSN is set
+    import sentry_sdk
+
+    def _scrub(event, hint):
+        req = event.get("request") or {}
+        req.pop("data", None)
+        req.pop("cookies", None)
+        req.pop("query_string", None)  # invite tokens and websocket tokens travel in query strings
+        headers = req.get("headers") or {}
+        for h in list(headers):
+            if h.lower() in ("authorization", "cookie", "x-cron-secret"):
+                headers[h] = "[removed]"
+        event.pop("user", None)
+        return event
+
+    sentry_sdk.init(dsn=settings.sentry_dsn, send_default_pii=False, traces_sample_rate=0.0, max_request_body_size="never",
+                    environment=settings.env, before_send=_scrub)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
