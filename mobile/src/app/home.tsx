@@ -1,7 +1,7 @@
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as LocalAuthentication from 'expo-local-authentication';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { requestWidgetUpdate } from 'react-native-android-widget';
@@ -13,11 +13,11 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Mascot, Mood } from '@/components/Mascot';
 import { Avatar, Card, Empty, Press, RollingNumber, Skeleton, T } from '@/components/ui';
 import { ApiError, api } from '@/lib/api';
-import { queryClient, refreshAll, useGroups, useMe, useReminders, useSummary } from '@/lib/hooks';
+import { queryClient, refreshAll, useGroups, useMe, useMonthSpend, useReminders, useSummary } from '@/lib/hooks';
 import { flushQueue, useQueue } from '@/lib/offline';
 import { registerForPush } from '@/lib/push';
 import { useStore } from '@/lib/store';
-import { colors, font, radius, shadow, spring } from '@/lib/theme';
+import { CATEGORY, colors, font, radius, shadow, spring } from '@/lib/theme';
 import { useTilt } from '@/lib/tilt';
 import { BalanceWidget } from '@/widget/BalanceWidget';
 import { haptic, rupees } from '@/lib/util';
@@ -56,6 +56,11 @@ export default function Home() {
   const insets = useSafeAreaInsets();
   const me = useMe();
   const summary = useSummary();
+  const spend = useMonthSpend();
+  // Every time you come back to Home (after adding an expense, for example) the numbers refresh.
+  useFocusEffect(React.useCallback(() => {
+    for (const k of ['summary', 'wrapped', 'groups', 'reminders']) queryClient.invalidateQueries({ queryKey: [k] });
+  }, []));
   const groups = useGroups();
   const reminders = useReminders();
   const [open, setOpen] = useState(false);
@@ -181,6 +186,40 @@ export default function Home() {
           </Animated.View>
         </View>
 
+        {/* what you've spent this month: your own share of every expense, updated as soon as you add one */}
+        <Press onPress={() => router.push('/insights')} scaleTo={0.98} label="Spent this month, open insights">
+          <Animated.View entering={FadeInDown.delay(80).springify().damping(15)} style={styles.spendCard}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <T v="tiny" color={colors.inkFaint}>{t('You spent in')} {spend.data?.month_name ?? new Date().toLocaleString('en-IN', { month: 'long' })}</T>
+              {spend.data && spend.data.change_pct !== null && Math.abs(spend.data.change_pct) >= 1 ? (
+                <View style={[styles.delta, { backgroundColor: spend.data.change_pct > 0 ? colors.coralSoft : colors.mintSoft }]}>
+                  <T v="tiny" color={spend.data.change_pct > 0 ? colors.coral : colors.mint} style={{ letterSpacing: 0, textTransform: 'none' }}>
+                    {spend.data.change_pct > 0 ? '▲' : '▼'} {Math.abs(spend.data.change_pct)}% {t('vs last month')}
+                  </T>
+                </View>
+              ) : null}
+            </View>
+            {spend.isLoading ? <Skeleton h={46} w={170} /> : <RollingNumber text={rupees(spend.data?.total_paise ?? 0)} size={38} />}
+            {spend.data?.has_data ? (
+              <>
+                <View style={{ flexDirection: 'row', height: 10, borderRadius: 5, overflow: 'hidden', backgroundColor: colors.line, marginTop: 4 }}>
+                  {spend.data.by_category.slice(0, 6).map((c) => (
+                    <View key={c.category} style={{ flex: Math.max(c.paise, 1), backgroundColor: (CATEGORY[c.category] ?? CATEGORY.other).color }} />
+                  ))}
+                </View>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 6 }}>
+                  {spend.data.by_category.slice(0, 3).map((c) => (
+                    <T key={c.category} v="small" color={colors.inkSoft}>{(CATEGORY[c.category] ?? CATEGORY.other).emoji} {rupees(c.paise)}</T>
+                  ))}
+                  <T v="small" color={colors.inkFaint}>· {spend.data.expense_count} {spend.data.expense_count === 1 ? t('expense') : t('expenses')}</T>
+                </View>
+              </>
+            ) : spend.data ? (
+              <T v="small" color={colors.inkSoft}>{t('Nothing yet. Add an expense and it shows up here straight away.')}</T>
+            ) : null}
+          </Animated.View>
+        </Press>
+
         {/* reminders strip: collapses away when empty */}
         {(reminders.data?.length ?? 0) > 0 ? (
           <Animated.View entering={FadeInDown.springify()} exiting={FadeOut} layout={LinearTransition.springify()} style={{ gap: 10 }}>
@@ -265,6 +304,8 @@ export default function Home() {
 }
 
 const styles = StyleSheet.create({
+  spendCard: { backgroundColor: '#fff', borderRadius: radius.lg, padding: 16, gap: 4, ...shadow, shadowOpacity: 0.08 },
+  delta: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: radius.pill },
   balance: { borderRadius: radius.xl, padding: 22, gap: 8, overflow: 'hidden' },
   shine: { position: 'absolute', top: -40, left: 60, width: 70, height: 300, backgroundColor: 'rgba(255,255,255,0.13)' },
   pill: { backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: radius.pill },

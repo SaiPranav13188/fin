@@ -252,6 +252,11 @@ const DICT: Record<string, [hi: string, te: string]> = {
   "Add your first expense to unlock this": ["इसे खोलने के लिए पहला खर्च जोड़ें", "దీన్ని తెరవడానికి మొదటి ఖర్చు చేర్చండి"],
   "Settle a whole group to unlock this": ["इसे खोलने के लिए पूरे ग्रुप का हिसाब चुकाएँ", "దీన్ని తెరవడానికి ఒక గ్రూప్ మొత్తం సెటిల్ చేయండి"],
   "Mark 3 bills as paid to unlock this": ["इसे खोलने के लिए 3 बिल भुगतान किए दर्ज करें", "దీన్ని తెరవడానికి 3 బిల్లులు చెల్లించినట్టు గుర్తించండి"],
+  "You spent in": ["आपने खर्च किया,", "మీరు ఖర్చు చేశారు,"],
+  "vs last month": ["पिछले महीने से", "గత నెలతో పోలిస్తే"],
+  "expense": ["खर्च", "ఖర్చు"],
+  "expenses": ["खर्च", "ఖర్చులు"],
+  "Nothing yet. Add an expense and it shows up here straight away.": ["अभी कुछ नहीं। खर्च जोड़ें, यहाँ तुरंत दिखेगा।", "ఇంకా ఏమీ లేదు. ఖర్చు చేరిస్తే ఇక్కడ వెంటనే కనిపిస్తుంది."],
 };
 
 /** Translate a piece of UI text into the language chosen in settings. */

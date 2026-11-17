@@ -12,6 +12,12 @@ export const refreshAll = () => queryClient.invalidateQueries();
 
 export const useMe = () => useQuery({ queryKey: ['me'], queryFn: () => api('/auth/me') });
 export const useGroups = () => useQuery({ queryKey: ['groups'], queryFn: () => api<Group[]>('/groups') });
+export type Wrapped = {
+  month_name: string; total_paise: number; prev_total_paise: number; change_pct: number | null; expense_count: number; has_data: boolean;
+  by_category: { category: string; paise: number; prev_paise: number; change_pct: number | null }[];
+};
+/** This month's spending: your own share of every expense in every group, so it matches what you really spent. */
+export const useMonthSpend = () => useQuery({ queryKey: ['wrapped'], queryFn: () => api<Wrapped>('/me/wrapped'), staleTime: 0 });
 export const useSummary = () => useQuery({ queryKey: ['summary'], queryFn: () => api<Summary>('/me/summary') });
 export const useReminders = () => useQuery({ queryKey: ['reminders'], queryFn: () => api<Reminder[]>('/reminders') });
 export const useGroup = (id?: string) => useQuery({ queryKey: ['group', id], queryFn: () => api<Group>(`/groups/${id}`), enabled: !!id });
