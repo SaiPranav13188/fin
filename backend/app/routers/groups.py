@@ -12,7 +12,7 @@ from ..models import Expense, Group, Member, Message, RecurringExpense, Settleme
 from ..schemas import (BalancesOut, ExpenseIn, ExpenseOut, GroupIn, GroupOut, GroupPatch, MemberIn, MemberOut,
                        MessageIn, MessageOut, RecurringIn, SettlementIn, SettlementOut)
 from ..security import current_user, user_from_token
-from ..services import ledger
+from ..services import ledger, money
 
 router = APIRouter(tags=["groups"])
 
@@ -31,6 +31,17 @@ class Hub:
 
 
 hub = Hub()
+
+
+def push_members(db: Session, group: Group, actor: Member, text: str) -> None:
+    """Phone notification to everyone else in the group who has the app. Sent in the background."""
+    from ..agents.monitor import send_push
+    from ..models import User as U
+    ids = [m.user_id for m in group.members if m.user_id and m.id != actor.id and m.active]
+    tokens = [u.push_token for u in db.scalars(select(U).where(U.id.in_(ids))) if u.push_token] if ids else []
+    if tokens:
+        import threading
+        threading.Thread(target=send_push, args=([(t, text) for t in tokens],), daemon=True).start()
 
 
 def notify(group_id: str, kind: str, data: dict | None = None):
@@ -219,6 +230,7 @@ def add_expense(group_id: str, body: ExpenseIn, user: User = Depends(current_use
     g, me = ledger.get_group(db, user, group_id)
     e = ledger.create_expense(db, g, me, body)
     notify(g.id, "expense", {"id": e.id})
+    push_members(db, g, me, f"{me.name} added {e.description} ({money.rupees(e.amount_paise)}) in {g.name}")
     return ledger.expense_out(e)
 
 
@@ -329,6 +341,8 @@ def settle(group_id: str, body: SettlementIn, user: User = Depends(current_user)
     db.add(Message(group_id=g.id, sender_member=me.id, body="", kind="settle_card", ref_id=s.id))
     db.commit()
     notify(g.id, "settlement", {"id": s.id})
+    names = {m.id: m.name for m in g.members}
+    push_members(db, g, me, f"{names[s.from_member]} paid {names[s.to_member]} {money.rupees(s.amount_paise)} in {g.name} ✓")
     return s
 
 

@@ -36,6 +36,9 @@ class Settings(BaseSettings):
     max_receipt_bytes: int = 6_000_000
 
     enable_scheduler: bool = False
+    brevo_api_key: str = ""  # email for password reset; empty = reset is switched off
+    mail_from: str = ""
+    mail_from_name: str = "Fin"
     cron_secret: str = ""  # shared secret for /internal/* (empty = those routes are off)
     sentry_dsn: str = ""
 

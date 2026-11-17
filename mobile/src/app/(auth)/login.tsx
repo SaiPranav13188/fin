@@ -1,4 +1,4 @@
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import Animated, { FadeInDown, LinearTransition } from 'react-native-reanimated';
@@ -71,6 +71,11 @@ export default function Login() {
             ) : null}
           </Animated.View>
           <Btn title={mode === 'signup' ? t("Create account") : t("Log in")} onPress={submit} loading={busy} style={{ marginTop: 10 }} />
+          {mode === 'login' ? (
+            <Press onPress={() => router.push({ pathname: '/forgot', params: { email } })} style={{ alignSelf: 'center', padding: 6 }}>
+              <T v="small" w="bold" color={colors.inkSoft}>Forgot password?</T>
+            </Press>
+          ) : null}
           <Press onPress={() => { setMode(mode === 'signup' ? 'login' : 'signup'); setError(null); }} style={{ alignSelf: 'center', padding: 10 }}>
             <T v="small" w="bold" color={colors.purple}>{mode === 'signup' ? t("I already have an account") : t("New here? Create an account")}</T>
           </Press>

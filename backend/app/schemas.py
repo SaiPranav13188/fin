@@ -39,6 +39,16 @@ class LoginIn(BaseModel):
     password: str = Field(max_length=128)
 
 
+class ForgotIn(BaseModel):
+    email: EmailStr
+
+
+class ResetIn(BaseModel):
+    email: EmailStr
+    code: str = Field(min_length=6, max_length=6, pattern=r"^\d{6}$")
+    password: str = Field(min_length=8, max_length=128)
+
+
 class RefreshIn(BaseModel):
     refresh_token: str
 

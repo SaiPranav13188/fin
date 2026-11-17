@@ -143,3 +143,43 @@ def test_delete_account(client, sai, trip):
     with SessionLocal() as db:
         assert db.get(Group, solo) is None  # nobody else used it
         assert db.query(AgentRun).filter(AgentRun.input.like("%cab 450%")).count() == 0
+
+
+def test_password_reset(client, sai, monkeypatch):
+    from app.config import get_settings
+    from app.routers import auth as auth_router
+    assert client.post("/auth/forgot", json={"email": "sai@example.com"}).status_code == 503  # email not set up
+    sent = []
+    monkeypatch.setattr(get_settings(), "brevo_api_key", "test")
+    monkeypatch.setattr(get_settings(), "mail_from", "fin@example.com")
+    monkeypatch.setattr(auth_router, "send_mail", lambda to, subject, text, html: sent.append((to, subject)) or True)
+    # the same answer whether or not the account exists
+    a = client.post("/auth/forgot", json={"email": "nobody@example.com"})
+    b = client.post("/auth/forgot", json={"email": "sai@example.com"})
+    assert a.status_code == b.status_code == 200 and a.json() == b.json() and len(sent) == 1
+    code = sent[0][1].split(": ")[1]
+    old_refresh = sai.tokens["refresh_token"]
+    wrong = "000000" if code != "000000" else "111111"
+    assert client.post("/auth/reset", json={"email": "sai@example.com", "code": wrong, "password": "newpassword1"}).status_code == 400
+    r = client.post("/auth/reset", json={"email": "sai@example.com", "code": code, "password": "newpassword1"})
+    assert r.status_code == 200 and r.json()["access_token"]
+    assert client.post("/auth/reset", json={"email": "sai@example.com", "code": code, "password": "again12345"}).status_code == 400  # one use
+    assert client.post("/auth/login", json={"email": "sai@example.com", "password": "password123"}).status_code == 401
+    assert client.post("/auth/login", json={"email": "sai@example.com", "password": "newpassword1"}).status_code == 200
+    assert client.post("/auth/refresh", json={"refresh_token": old_refresh}).status_code == 401  # other phones signed out
+
+
+def test_reset_code_attempts_are_limited(client, sai, monkeypatch):
+    from app.config import get_settings
+    from app.routers import auth as auth_router
+    sent = []
+    monkeypatch.setattr(get_settings(), "brevo_api_key", "test")
+    monkeypatch.setattr(get_settings(), "mail_from", "fin@example.com")
+    monkeypatch.setattr(auth_router, "send_mail", lambda to, subject, text, html: sent.append(subject) or True)
+    client.post("/auth/forgot", json={"email": "sai@example.com"})
+    code = sent[0].split(": ")[1]
+    wrong = "000000" if code != "000000" else "111111"
+    for _ in range(5):
+        client.post("/auth/reset", json={"email": "sai@example.com", "code": wrong, "password": "newpassword1"})
+    # after 5 wrong tries even the right code is refused
+    assert client.post("/auth/reset", json={"email": "sai@example.com", "code": code, "password": "newpassword1"}).status_code == 400

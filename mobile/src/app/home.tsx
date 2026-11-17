@@ -3,7 +3,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { router } from 'expo-router';
 import React, { useCallback, useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { requestWidgetUpdate } from 'react-native-android-widget';
 import Animated, {
   FadeIn, FadeInDown, FadeOut, LinearTransition, interpolate, useAnimatedStyle, useSharedValue, withDelay, withSpring, withTiming,
 } from 'react-native-reanimated';
@@ -14,9 +15,11 @@ import { Avatar, Card, Empty, Press, RollingNumber, Skeleton, T } from '@/compon
 import { ApiError, api } from '@/lib/api';
 import { queryClient, refreshAll, useGroups, useMe, useReminders, useSummary } from '@/lib/hooks';
 import { flushQueue, useQueue } from '@/lib/offline';
+import { registerForPush } from '@/lib/push';
 import { useStore } from '@/lib/store';
 import { colors, font, radius, shadow, spring } from '@/lib/theme';
 import { useTilt } from '@/lib/tilt';
+import { BalanceWidget } from '@/widget/BalanceWidget';
 import { haptic, rupees } from '@/lib/util';
 import { t } from '@/lib/i18n';
 
@@ -62,6 +65,19 @@ export default function Home() {
   const tilt = useTilt();
   const showToast = useStore((s) => s.showToast);
   const waiting = useQueue((s) => s.items.length);
+  // Ask for notifications once the user has seen the app, not on the first screen.
+  React.useEffect(() => {
+    const t = setTimeout(registerForPush, 2500);
+    return () => clearTimeout(t);
+  }, []);
+  // Keep the home-screen widget in step with the balance shown here.
+  React.useEffect(() => {
+    if (Platform.OS !== 'android' || !summary.data) return;
+    requestWidgetUpdate({
+      widgetName: 'Balance',
+      renderWidget: () => <BalanceWidget data={{ signedIn: true, owePaise: summary.data!.you_owe_paise, owedPaise: summary.data!.you_are_owed_paise, updated: new Date().toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' }) }} />,
+    }).catch(() => {});
+  }, [summary.data?.you_owe_paise, summary.data?.you_are_owed_paise]);
 
   const owed = summary.data?.you_are_owed_paise ?? 0;
   const owe = summary.data?.you_owe_paise ?? 0;

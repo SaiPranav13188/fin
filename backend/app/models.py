@@ -48,6 +48,18 @@ class RefreshToken(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
 
 
+class PasswordReset(Base):
+    """A 6-digit code emailed to the user. Only its hash is stored; it expires and allows few attempts."""
+    __tablename__ = "password_resets"
+    id: Mapped[str] = pk()
+    user_id: Mapped[str] = fk("users.id")
+    code_hash: Mapped[str] = mapped_column(String(64))
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    attempts: Mapped[int] = mapped_column(Integer, default=0)
+    used: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
 class Group(Base):
     __tablename__ = "groups"
     id: Mapped[str] = pk()

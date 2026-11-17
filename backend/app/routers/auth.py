@@ -1,11 +1,18 @@
+import hashlib
+import hmac
+import html
+import secrets
+from datetime import datetime, timedelta, timezone
+
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..config import get_settings
 from ..db import get_db
-from ..models import User
-from ..schemas import LoginIn, RefreshIn, SignupIn, TokenOut, UserOut, UserPatch
+from ..models import PasswordReset, RefreshToken, User
+from ..schemas import ForgotIn, LoginIn, RefreshIn, ResetIn, SignupIn, TokenOut, UserOut, UserPatch
+from ..services.mailer import mail_enabled, send_mail
 from ..security import (check_rate, client_ip, current_user, hash_password, issue_refresh_token, make_access_token,
                         revoke_refresh_token, rotate_refresh_token, verify_password)
 
@@ -55,6 +62,65 @@ def refresh(body: RefreshIn, db: Session = Depends(get_db)):
 @router.post("/logout", status_code=204)
 def logout(body: RefreshIn, db: Session = Depends(get_db)):
     revoke_refresh_token(db, body.refresh_token)
+
+
+RESET_MINUTES = 15
+RESET_ATTEMPTS = 5
+
+
+def _code_hash(user_id: str, code: str) -> str:
+    return hmac.new(get_settings().jwt_secret.encode(), f"{user_id}:{code}".encode(), hashlib.sha256).hexdigest()
+
+
+@router.post("/forgot")
+def forgot(body: ForgotIn, request: Request, db: Session = Depends(get_db)):
+    """Emails a 6-digit code. Always answers the same way, so it can't be used to find out who has an account."""
+    if not mail_enabled():
+        raise HTTPException(503, "Password reset isn't switched on yet. Please try again later.")
+    limit = get_settings().rate_login_per_minute
+    check_rate(f"forgot:{client_ip(request)}", limit)
+    check_rate(f"forgot:{body.email.lower()}", 3)
+    user = db.scalar(select(User).where(User.email == body.email.lower()))
+    if user:
+        db.query(PasswordReset).filter_by(user_id=user.id, used=False).update({"used": True})
+        code = f"{secrets.randbelow(1_000_000):06d}"
+        db.add(PasswordReset(user_id=user.id, code_hash=_code_hash(user.id, code),
+                             expires_at=datetime.now(timezone.utc) + timedelta(minutes=RESET_MINUTES)))
+        db.commit()
+        send_mail(user.email, f"Your Fin code: {code}",
+                  f"Hi {user.name},\n\nYour Fin password reset code is {code}. It works for {RESET_MINUTES} minutes.\n\n"
+                  "If you didn't ask for this, ignore this email. Your password stays the same.",
+                  f"<div style='font-family:sans-serif;max-width:420px'><p>Hi {html.escape(user.name)},</p>"
+                  f"<p>Your Fin password reset code is</p><p style='font-size:32px;font-weight:800;letter-spacing:6px'>{code}</p>"
+                  f"<p>It works for {RESET_MINUTES} minutes. If you didn't ask for this, ignore this email.</p></div>")
+    return {"ok": True, "message": "If that email has a Fin account, a code is on its way."}
+
+
+@router.post("/reset", response_model=TokenOut)
+def reset(body: ResetIn, request: Request, db: Session = Depends(get_db)):
+    check_rate(f"reset:{client_ip(request)}", get_settings().rate_login_per_minute)
+    bad = HTTPException(400, "That code is wrong or has expired. Ask for a new one.")
+    user = db.scalar(select(User).where(User.email == body.email.lower()))
+    if not user:
+        raise bad
+    row = db.scalar(select(PasswordReset).where(PasswordReset.user_id == user.id, PasswordReset.used.is_(False))
+                    .order_by(PasswordReset.created_at.desc()))
+    if not row:
+        raise bad
+    expires = row.expires_at if row.expires_at.tzinfo else row.expires_at.replace(tzinfo=timezone.utc)
+    row.attempts += 1
+    if row.attempts > RESET_ATTEMPTS or expires < datetime.now(timezone.utc):
+        row.used = True
+        db.commit()
+        raise bad
+    if not hmac.compare_digest(row.code_hash, _code_hash(user.id, body.code.strip())):
+        db.commit()
+        raise bad
+    row.used = True
+    user.password_hash = hash_password(body.password)
+    db.query(RefreshToken).filter_by(user_id=user.id).update({"revoked": True})  # sign out every other phone
+    db.commit()
+    return _tokens(db, user.id)
 
 
 @router.get("/me", response_model=UserOut)
