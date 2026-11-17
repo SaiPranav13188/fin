@@ -10,6 +10,7 @@ import { Btn, T } from '@/components/ui';
 import { useStore } from '@/lib/store';
 import { colors, radius } from '@/lib/theme';
 import { haptic } from '@/lib/util';
+import { t } from '@/lib/i18n';
 
 const AWAY_MS = 20_000; // lock again after the app has been in the background this long
 
@@ -73,9 +74,9 @@ export function LockHost() {
             <Animated.View style={[styles.ring, ring]} />
             <Animated.View entering={ZoomIn.springify().damping(9)}><Mascot size={150} mood={mood} speech={failed ? "That wasn't you? Try again" : mood === 'cheer' ? 'Welcome back!' : undefined} /></Animated.View>
           </View>
-          <T v="h1" color="#fff" center>Fin is locked</T>
-          <T color="rgba(255,255,255,0.9)" center>Your balances are hidden until you unlock.</T>
-          <Btn title="Unlock" kind="soft" icon="🔒" onPress={unlock} />
+          <T v="h1" color="#fff" center>{t("Fin is locked")}</T>
+          <T color="rgba(255,255,255,0.9)" center>{t("Your balances are hidden until you unlock.")}</T>
+          <Btn title={t("Unlock")} kind="soft" icon="🔒" onPress={unlock} />
         </Animated.View>
       </LinearGradient>
     </Animated.View>

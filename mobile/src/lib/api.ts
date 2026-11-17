@@ -117,7 +117,7 @@ export function streamDraft(body: { text: string; group_id?: string | null; sour
 export type Member = { id: string; name: string; upi_id: string | null; verified: boolean; active: boolean; is_self: boolean };
 export type Group = { id: string; name: string; emoji: string; kind: string; members: Member[]; my_balance_paise: number; total_spent_paise: number; created_at: string };
 export type Item = { name: string; amount_paise: number; member_ids: string[] };
-export type Expense = { id: string; group_id: string; description: string; category: string; amount_paise: number; split_type: string; note: string | null; created_via: string; spent_on: string; created_at: string; payers: Record<string, number>; shares: Record<string, number>; items: Item[] };
+export type Expense = { id: string; group_id: string; description: string; category: string; amount_paise: number; split_type: string; note: string | null; created_via: string; spent_on: string; created_at: string; payers: Record<string, number>; shares: Record<string, number>; items: Item[]; currency?: string; original_minor?: number | null; fx_rate?: number | null };
 export type Transfer = { from_member: string; to_member: string; amount_paise: number; upi_link: string | null; over_upi_limit: boolean };
 export type Balances = { net: Record<string, number>; transfers: Transfer[]; all_settled: boolean };
 export type Message = { id: string; group_id: string; sender_member: string | null; body: string; kind: 'text' | 'split_card' | 'settle_card' | 'system'; ref_id: string | null; created_at: string };

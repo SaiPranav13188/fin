@@ -6,6 +6,7 @@ import Animated, { FadeInDown, LinearTransition, interpolate, useAnimatedStyle, 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scheduleOnRN } from 'react-native-worklets';
 
+import { GoalsStrip } from '@/components/Goals';
 import { Mascot } from '@/components/Mascot';
 import { Confetti, PizzaChart, Progress } from '@/components/fx';
 import { Avatar, Btn, Empty, Field, Press, Screen, Sheet, Skeleton, T } from '@/components/ui';
@@ -17,6 +18,13 @@ import { CATEGORY, colors, font, radius, shadow, spring } from '@/lib/theme';
 import { useTilt } from '@/lib/tilt';
 import { haptic, rupees, timeAgo } from '@/lib/util';
 import { t } from '@/lib/i18n';
+
+/** "US$30.00" for an expense paid abroad. */
+function foreignText(e: Expense) {
+  const whole = ['JPY', 'IDR', 'VND'].includes(e.currency ?? '');
+  const n = whole ? e.original_minor! : e.original_minor! / 100;
+  return `${e.currency} ${n.toLocaleString('en-IN', { minimumFractionDigits: whole ? 0 : 2, maximumFractionDigits: whole ? 0 : 2 })}`;
+}
 
 function SplitCard({ e, members, net, onDelete, onSettle, onNudge, onOpen }: { e: Expense; members: Member[]; net: Record<string, number>; onDelete: () => void; onSettle: () => void; onNudge: (m: Member) => void; onOpen: () => void }) {
   const x = useSharedValue(0);
@@ -62,7 +70,10 @@ function SplitCard({ e, members, net, onDelete, onSettle, onNudge, onOpen }: { e
               <T v="h3" numberOfLines={1}>{cat.emoji} {e.description}</T>
               <T v="small" color={colors.inkSoft} numberOfLines={1}>{payer?.is_self ? t("You") : payer?.name ?? 'Someone'} paid · {timeAgo(e.created_at)}{e.created_via !== 'manual' ? ' · ✨' : ''}</T>
             </View>
-            <T v="h2">{rupees(e.amount_paise)}</T>
+            <View style={{ alignItems: 'flex-end' }}>
+              <T v="h2">{rupees(e.amount_paise)}</T>
+              {e.currency && e.currency !== 'INR' && e.original_minor ? <T v="tiny" color={colors.inkFaint} style={{ textTransform: 'none', letterSpacing: 0 }}>{foreignText(e)}</T> : null}
+            </View>
           </Press>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 10 }}>
             {people.map((id) => {
@@ -72,9 +83,9 @@ function SplitCard({ e, members, net, onDelete, onSettle, onNudge, onOpen }: { e
               return (
                 <Press key={id} scaleTo={0.9} label={m.name}
                   onLongPress={paid || m.is_self ? undefined : () => { haptic.bump(); setWiggle({ ...wiggle, [id]: Date.now() }); onNudge(m); }}>
-                  <View style={{ alignItems: 'center', width: 54 }}>
+                  <View style={{ alignItems: 'center', width: 66 }}>
                     <Avatar name={m.name} index={idx(id)} size={34} ring={paid ? 'paid' : 'pending'} wiggleKey={wiggle[id]} />
-                    <T v="tiny" color={colors.inkSoft} style={{ textTransform: 'none', letterSpacing: 0 }}>{rupees(e.shares[id])}</T>
+                    <T v="tiny" color={colors.inkSoft} numberOfLines={1} adjustsFontSizeToFit style={{ textTransform: 'none', letterSpacing: 0, maxWidth: 64 }}>{rupees(e.shares[id])}</T>
                   </View>
                 </Press>
               );
@@ -267,6 +278,7 @@ export default function GroupScreen() {
         <Btn small title={t("Settle")} kind="soft" icon="🤝" onPress={() => router.push({ pathname: '/settle', params: { group: id } })} disabled={balances.data?.all_settled ?? true} />
         <Btn small title={t("Add")} icon="＋" onPress={() => router.push({ pathname: '/add-expense', params: { group: id } })} />
       </View>
+      {group.data ? <GoalsStrip groupId={id} members={members} /> : null}
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}>
         {messages.isLoading ? <View style={{ padding: 20, gap: 12 }}><Skeleton h={150} /><Skeleton h={150} /></View> : (
           <FlatList
@@ -334,6 +346,7 @@ export default function GroupScreen() {
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' }}>
               <View>
                 <T v="h1">{rupees(detail.amount_paise)}</T>
+                {detail.currency && detail.currency !== 'INR' && detail.original_minor ? <T v="small" color={colors.purple} w="semi">{foreignText(detail)} at ₹{detail.fx_rate?.toFixed(2)} each</T> : null}
                 <T v="small" color={colors.inkSoft}>{(CATEGORY[detail.category] ?? CATEGORY.other).emoji} {(CATEGORY[detail.category] ?? CATEGORY.other).label} · {new Date(detail.spent_on + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</T>
               </View>
               <T v="tiny" color={colors.inkFaint}>{detail.split_type === 'itemised' ? 'by item' : detail.split_type === 'equal' ? 'split equally' : `by ${detail.split_type}`}</T>

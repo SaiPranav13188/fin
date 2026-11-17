@@ -32,7 +32,7 @@ export function useGroupLive(id?: string) {
       ws = new WebSocket(`${API_URL.replace(/^http/, 'ws')}/groups/${id}/ws?token=${encodeURIComponent(access)}`);
       ws.onopen = () => (tries = 0);
       ws.onmessage = () => {
-        for (const key of ['group', 'expenses', 'balances', 'messages']) queryClient.invalidateQueries({ queryKey: [key, id] });
+        for (const key of ['group', 'expenses', 'balances', 'messages', 'goals']) queryClient.invalidateQueries({ queryKey: [key, id] });
         queryClient.invalidateQueries({ queryKey: ['summary'] });
         queryClient.invalidateQueries({ queryKey: ['groups'] });
       };

@@ -1,8 +1,7 @@
 /** Settle up: plan -> safety check -> swipe to pay -> your UPI app -> "Did it go through?" -> calm result. */
-import * as Linking from 'expo-linking';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
-import { AppState, Dimensions, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { AppState, Dimensions, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   Easing, FadeIn, FadeInDown, FadeOut, ZoomIn, useAnimatedProps, useAnimatedStyle, useSharedValue, withDelay, withRepeat,
   withSequence, withSpring, withTiming,
@@ -16,6 +15,7 @@ import { Avatar, Btn, Card, Chip, Empty, Press, RollingNumber, Screen, Skeleton,
 import { ApiError, SafetyFlag, api } from '@/lib/api';
 import { refreshAll, useGroup, useGroups } from '@/lib/hooks';
 import { sfx } from '@/lib/sfx';
+import { payWithUpi } from '@/lib/payapp';
 import { useStore } from '@/lib/store';
 import { colors, radius, spring } from '@/lib/theme';
 import { haptic, rupees } from '@/lib/util';
@@ -76,6 +76,8 @@ export default function Settle() {
   const [boom, setBoom] = useState(0);
   const [waited, setWaited] = useState(0);
   const leftApp = useRef(false);
+  const viaResult = useRef(false);
+  const [confirmed, setConfirmed] = useState(false);
   const showToast = useStore((s) => s.showToast);
   const [qrFor, setQrFor] = useState<Step | null>(null);
   const float = useSharedValue(0);
@@ -94,7 +96,7 @@ export default function Settle() {
   useEffect(() => {
     const sub = AppState.addEventListener('change', (s) => {
       if (s !== 'active' && phase === 'processing') leftApp.current = true;
-      if (s === 'active' && phase === 'processing' && leftApp.current) setTimeout(() => setPhase('ask'), 1600);
+      if (s === 'active' && phase === 'processing' && leftApp.current && !viaResult.current) setTimeout(() => setPhase('ask'), 1600);
     });
     return () => sub.remove();
   }, [phase]);
@@ -123,21 +125,27 @@ export default function Settle() {
   const openUpi = async () => {
     if (!cur?.upi_link) return;
     leftApp.current = false;
+    viaResult.current = Platform.OS === 'android';
     setPhase('processing');
-    try {
-      await Linking.openURL(cur.upi_link);
-    } catch {
-      setPhase('failed'); // no UPI app installed
+    const status = await payWithUpi(cur.upi_link);
+    if (status === 'no_app') return setPhase('failed');
+    if (!viaResult.current) {
+      setTimeout(() => setPhase((p) => (p === 'processing' && !leftApp.current ? 'ask' : p)), 6000);
       return;
     }
-    setTimeout(() => setPhase((p) => (p === 'processing' && !leftApp.current ? 'ask' : p)), 6000);
+    // The UPI app told us how it went.
+    if (status === 'success') return record(cur, 'upi', true);
+    if (status === 'failure') { haptic.warn(); return setPhase('failed'); }
+    if (status === 'submitted') return setPhase('pending');
+    setPhase('ask');
   };
 
-  const record = async (s: Step, method: 'upi' | 'cash') => {
+  const record = async (s: Step, method: 'upi' | 'cash', confirmedByApp = false) => {
     setBusy(true);
     try {
       await api(`/groups/${groupId}/settlements`, { body: { from_member: s.from_member, to_member: s.to_member, amount_paise: s.amount_paise, method } });
       setCur(s);
+      setConfirmed(confirmedByApp);
       setPhase('success');
       setBoom(Date.now());
       haptic.success();
@@ -193,7 +201,7 @@ export default function Settle() {
                     </View>
                   ) : (
                     <View style={{ gap: 8 }}>
-                      <Btn small title="Show QR to get paid" icon="📱" onPress={() => setQrFor(s)} />
+                      <Btn small title={t("Show QR to get paid")} icon="📱" onPress={() => setQrFor(s)} />
                       <View style={{ flexDirection: 'row', gap: 8 }}>
                       <Btn small title={t("Got it in cash")} kind="soft" onPress={() => record(s, 'cash')} style={{ flex: 1 }} />
                       <Btn small title={t("Remind")} icon="💌" kind="soft" style={{ flex: 1 }}
@@ -287,6 +295,7 @@ export default function Settle() {
           <Mascot size={150} mood="cheer" />
           <T v="h1" center>{t("Paid!")}</T>
           <T color={colors.inkSoft} center>{rupees(cur.amount_paise)} to {cur.to_name} is recorded.</T>
+          {confirmed ? <Animated.View entering={FadeInDown.delay(400)} style={{ backgroundColor: colors.mintSoft, paddingHorizontal: 14, paddingVertical: 6, borderRadius: radius.pill }}><T v="small" w="bold" color={colors.mint}>{t("✓ Confirmed by your UPI app")}</T></Animated.View> : null}
           <View style={{ alignSelf: 'stretch', gap: 10, marginTop: 20 }}>
             <Btn title={t("Done")} onPress={() => (router.canGoBack() ? router.back() : router.replace('/home'))} />
             <Btn title={t("Settle another")} kind="ghost" onPress={backToPlan} />

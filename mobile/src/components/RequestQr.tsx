@@ -8,6 +8,7 @@ import { Mascot } from '@/components/Mascot';
 import { Btn, Sheet, T } from '@/components/ui';
 import { colors, radius, shadow, spring } from '@/lib/theme';
 import { haptic, rupees } from '@/lib/util';
+import { t } from '@/lib/i18n';
 
 type Props = { visible: boolean; onClose: () => void; link: string | null; title: string; amountPaise?: number; sub?: string };
 
@@ -36,8 +37,8 @@ export function RequestQr({ visible, onClose, link, title, amountPaise, sub }: P
               <Animated.View pointerEvents="none" style={[styles.beam, sweep]} />
             </Animated.View>
             {amountPaise ? <Animated.View entering={FadeInDown.delay(500).springify()}><T v="h1">{rupees(amountPaise)}</T></Animated.View> : null}
-            <Animated.View entering={FadeInDown.delay(650)}><T v="small" color={colors.inkSoft} center>{sub ?? 'Ask them to scan this with GPay, PhonePe, Paytm or any UPI app.'}</T></Animated.View>
-            <Btn title="Share this payment link" kind="soft" icon="🔗" onPress={() => Share.share({ message: `Pay me${amountPaise ? ` ${rupees(amountPaise)}` : ''} with any UPI app: ${link}` }).catch(() => {})} style={{ alignSelf: 'stretch' }} />
+            <Animated.View entering={FadeInDown.delay(650)}><T v="small" color={colors.inkSoft} center>{sub ?? t("Ask them to scan this with GPay, PhonePe, Paytm or any UPI app.")}</T></Animated.View>
+            <Btn title={t("Share this payment link")} kind="soft" icon="🔗" onPress={() => Share.share({ message: `Pay me${amountPaise ? ` ${rupees(amountPaise)}` : ''} with any UPI app: ${link}` }).catch(() => {})} style={{ alignSelf: 'stretch' }} />
           </>
         ) : (
           <>

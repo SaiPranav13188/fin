@@ -17,6 +17,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { CATEGORY, colors, font, radius, spring } from '@/lib/theme';
 import { haptic, rupees } from '@/lib/util';
+import { t } from '@/lib/i18n';
 
 type Wrapped = {
   month: string; month_name: string; total_paise: number; prev_total_paise: number; change_pct: number | null; expense_count: number;
@@ -128,7 +129,7 @@ export default function WrappedScreen() {
               {i === 0 ? (
                 <>
                   <Animated.View entering={ZoomIn.springify().damping(9)} style={{ alignItems: 'center' }}><Mascot size={170} mood={mood} /></Animated.View>
-                  <Animated.View entering={FadeInUp.delay(300).springify()}><T v="tiny" color="rgba(255,255,255,0.85)" center>Your month on Fin</T></Animated.View>
+                  <Animated.View entering={FadeInUp.delay(300).springify()}><T v="tiny" color="rgba(255,255,255,0.85)" center>{t("Your month on Fin")}</T></Animated.View>
                   <Animated.View entering={FadeInUp.delay(450).springify().damping(12)}><Text style={styles.hero}>{w.month_name}</Text></Animated.View>
                   <Animated.View entering={FadeIn.delay(900)}><T color="rgba(255,255,255,0.9)" center>{w.expense_count} expense{w.expense_count === 1 ? '' : 's'} across {w.groups_active} group{w.groups_active === 1 ? '' : 's'}. Ready?</T></Animated.View>
                 </>
@@ -156,7 +157,7 @@ export default function WrappedScreen() {
 
               {i === 2 && topCat && top ? (
                 <>
-                  <Animated.View entering={FadeInDown.springify()}><T v="tiny" color="rgba(255,255,255,0.85)" center>Where it went</T></Animated.View>
+                  <Animated.View entering={FadeInDown.springify()}><T v="tiny" color="rgba(255,255,255,0.85)" center>{t("Where it went")}</T></Animated.View>
                   <Floaty style={{ alignItems: 'center' }}><Animated.Text entering={ZoomIn.delay(200).springify().damping(7)} style={{ fontSize: 96 }}>{topCat.emoji}</Animated.Text></Floaty>
                   <Animated.View entering={FadeInUp.delay(400).springify()}><T v="h1" color="#fff" center>{topCat.label} took the crown</T></Animated.View>
                   <Animated.View entering={FadeIn.delay(600)}><T color="rgba(255,255,255,0.9)" center>{rupees(top.paise)} · {Math.round((top.paise / Math.max(w.total_paise, 1)) * 100)}% of your month{top.change_pct !== null && Math.abs(top.change_pct) >= 5 ? `. That's ${Math.abs(top.change_pct)}% ${top.change_pct > 0 ? 'more' : 'less'} than last month.` : '.'}</T></Animated.View>
@@ -173,10 +174,10 @@ export default function WrappedScreen() {
 
               {i === 3 ? (
                 <>
-                  <Animated.View entering={FadeInDown.springify()}><T v="tiny" color="rgba(255,255,255,0.85)" center>Moments</T></Animated.View>
+                  <Animated.View entering={FadeInDown.springify()}><T v="tiny" color="rgba(255,255,255,0.85)" center>{t("Moments")}</T></Animated.View>
                   {w.biggest ? (
                     <Animated.View entering={ZoomIn.delay(200).springify().damping(10)} style={styles.card}>
-                      <T v="tiny" color={colors.inkFaint}>Biggest expense</T>
+                      <T v="tiny" color={colors.inkFaint}>{t("Biggest expense")}</T>
                       <T v="h2">{(CATEGORY[w.biggest.category] ?? CATEGORY.other).emoji} {w.biggest.description}</T>
                       <T v="h1" color={colors.purple}>{rupees(w.biggest.paise)}</T>
                       <T v="small" color={colors.inkSoft}>in {w.biggest.group}</T>
@@ -185,7 +186,7 @@ export default function WrappedScreen() {
                   {w.top_buddy ? (
                     <Animated.View entering={ZoomIn.delay(500).springify().damping(10)} style={[styles.card, { flexDirection: 'row', alignItems: 'center', gap: 14 }]}>
                       <Avatar name={w.top_buddy.name} index={1} size={52} />
-                      <View style={{ flex: 1 }}><T v="tiny" color={colors.inkFaint}>Your split buddy</T><T v="h2">{w.top_buddy.name}</T><T v="small" color={colors.inkSoft}>{w.top_buddy.count} shared expenses</T></View>
+                      <View style={{ flex: 1 }}><T v="tiny" color={colors.inkFaint}>{t("Your split buddy")}</T><T v="h2">{w.top_buddy.name}</T><T v="small" color={colors.inkSoft}>{w.top_buddy.count} shared expenses</T></View>
                     </Animated.View>
                   ) : null}
                   {w.busiest_day ? (
@@ -205,7 +206,7 @@ export default function WrappedScreen() {
                     </T>
                   </Animated.View>
                   <Animated.View entering={FadeInUp.delay(900).springify()} style={{ gap: 10, marginTop: 8 }}>
-                    <Btn title="Share my month" icon="📣" onPress={share} />
+                    <Btn title={t("Share my month")} icon="📣" onPress={share} />
                     <Btn title="Done" kind="ghost" onPress={() => router.back()} />
                   </Animated.View>
                 </>

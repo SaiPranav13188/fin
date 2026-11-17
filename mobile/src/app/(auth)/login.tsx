@@ -73,7 +73,7 @@ export default function Login() {
           <Btn title={mode === 'signup' ? t("Create account") : t("Log in")} onPress={submit} loading={busy} style={{ marginTop: 10 }} />
           {mode === 'login' ? (
             <Press onPress={() => router.push({ pathname: '/forgot', params: { email } })} style={{ alignSelf: 'center', padding: 6 }}>
-              <T v="small" w="bold" color={colors.inkSoft}>Forgot password?</T>
+              <T v="small" w="bold" color={colors.inkSoft}>{t("Forgot password?")}</T>
             </Press>
           ) : null}
           <Press onPress={() => { setMode(mode === 'signup' ? 'login' : 'signup'); setError(null); }} style={{ alignSelf: 'center', padding: 10 }}>

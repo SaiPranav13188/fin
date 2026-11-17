@@ -4,6 +4,7 @@ import * as LocalAuthentication from 'expo-local-authentication';
 import { Alert, Platform, ScrollView, Switch, View } from 'react-native';
 
 import { RequestQr } from '@/components/RequestQr';
+import { UPI_APPS } from '@/lib/payapp';
 
 import { Mascot } from '@/components/Mascot';
 import { Btn, Card, Chip, Field, Screen, T } from '@/components/ui';
@@ -92,18 +93,25 @@ export default function Profile() {
         </Card>
         <Card index={2} style={{ gap: 16 }}>
           {toggle('haptics', t('Haptics'), t("Little taps as you swipe and pay"))}
-          {toggle('lock', 'App lock', 'Ask for your fingerprint or face when Fin opens')}
-          {toggle('sound', 'Sounds', 'A coin clink and a soft chime. Follows silent mode')}
+          {toggle('lock', t("App lock"), t("Ask for your fingerprint or face when Fin opens"))}
+          {toggle('sound', t("Sounds"), t("A coin clink and a soft chime. Follows silent mode"))}
           {toggle('reduceMotion', t("Reduce motion"), t("Swap big animations for simple fades"))}
         </Card>
-        <Btn title="My payment QR" kind="soft" icon="📱" onPress={() => setQr(true)} />
-        <RequestQr visible={qr} onClose={() => setQr(false)} link={myLink} title="Pay me" sub="Anyone can scan this with GPay, PhonePe, Paytm or any UPI app and type the amount." />
+        <Card index={3} style={{ gap: 10 }}>
+          <T v="tiny" color={colors.inkFaint}>{t('Pay with')}</T>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            {UPI_APPS.map((a) => <Chip key={a.key} label={a.key === 'ask' ? t('Ask every time') : a.label} active={settings.upiApp === a.key} onPress={() => { setSetting('upiApp', a.key); haptic.tick(); }} />)}
+          </View>
+          <T v="small" color={colors.inkSoft}>{t('Fin opens this app straight away. If it isn’t installed, Android lets you pick.')}</T>
+        </Card>
+        <Btn title={t("My payment QR")} kind="soft" icon="📱" onPress={() => setQr(true)} />
+        <RequestQr visible={qr} onClose={() => setQr(false)} link={myLink} title={t("Pay me")} sub="Anyone can scan this with GPay, PhonePe, Paytm or any UPI app and type the amount." />
         <Card index={3} style={{ gap: 12 }}>
-          <T v="tiny" color={colors.inkFaint}>Fin's outfit</T>
+          <T v="tiny" color={colors.inkFaint}>{t("Fin's outfit")}</T>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             {([['none', 'None', null], ['cap', '🧢 Cap', 'first-split'], ['party', '🥳 Party hat', 'settled'], ['scarf', '🧣 Scarf', 'bills-3']] as const).map(([k, l, need]) => {
               const open = !need || settings.earned.some((e) => e.startsWith(need));
-              return <Chip key={k} label={open ? l : `🔒 ${l}`} active={settings.outfit === k} onPress={() => (open ? setSetting('outfit', k) : showToast(need === 'first-split' ? 'Add your first expense to unlock this' : need === 'settled' ? 'Settle a whole group to unlock this' : 'Mark 3 bills as paid to unlock this', 'info'))} />;
+              return <Chip key={k} label={open ? t(l) : `🔒 ${t(l)}`} active={settings.outfit === k} onPress={() => (open ? setSetting('outfit', k) : showToast(need === 'first-split' ? t("Add your first expense to unlock this") : need === 'settled' ? t("Settle a whole group to unlock this") : t("Mark 3 bills as paid to unlock this"), 'info'))} />;
             })}
           </View>
         </Card>

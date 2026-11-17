@@ -8,7 +8,7 @@ import Animated, {
 
 import { Mascot, Mood } from '@/components/Mascot';
 import { Confetti, Keypad, PizzaChart } from '@/components/fx';
-import { Avatar, Btn, Chip, Press, RollingNumber, Screen, T } from '@/components/ui';
+import { Avatar, Btn, Chip, Dots, Press, RollingNumber, Screen, T } from '@/components/ui';
 import { ApiError, Draft, api } from '@/lib/api';
 import { refreshAll, useExpenses, useGroup, useGroups } from '@/lib/hooks';
 import { enqueueExpense } from '@/lib/offline';
@@ -22,6 +22,10 @@ type SplitType = 'equal' | 'exact' | 'shares' | 'percent';
 const TYPES: { key: SplitType; label: string }[] = [
   { key: 'equal', label: 'Equally' }, { key: 'exact', label: 'By amount' }, { key: 'shares', label: 'By shares' }, { key: 'percent', label: 'By %' },
 ];
+const CURRENCY_LIST = ['INR', 'USD', 'EUR', 'GBP', 'AED', 'SGD', 'THB', 'MYR', 'JPY', 'AUD', 'CAD', 'LKR', 'NPR', 'IDR', 'VND', 'CHF'];
+const NO_DECIMALS = ['JPY', 'IDR', 'VND'];
+const SYMBOL: Record<string, string> = { INR: '₹', USD: '$', EUR: '€', GBP: '£', AED: 'AED ', SGD: 'S$', THB: '฿', MYR: 'RM', JPY: '¥', AUD: 'A$', CAD: 'C$', LKR: 'Rs ', NPR: 'Rs ', IDR: 'Rp ', VND: '₫', CHF: 'CHF ' };
+const FLAG: Record<string, string> = { INR: '🇮🇳', USD: '🇺🇸', EUR: '🇪🇺', GBP: '🇬🇧', AED: '🇦🇪', SGD: '🇸🇬', THB: '🇹🇭', MYR: '🇲🇾', JPY: '🇯🇵', AUD: '🇦🇺', CAD: '🇨🇦', LKR: '🇱🇰', NPR: '🇳🇵', IDR: '🇮🇩', VND: '🇻🇳', CHF: '🇨🇭' };
 const KEYWORDS: Record<string, string> = { pizza: 'food', dinner: 'food', lunch: 'food', chai: 'food', swiggy: 'food', zomato: 'food', cab: 'travel', uber: 'travel', ola: 'travel', petrol: 'travel', rent: 'rent', wifi: 'bills', electricity: 'bills', grocer: 'groceries', blinkit: 'groceries', movie: 'fun', netflix: 'fun', amazon: 'shopping', medicine: 'health' };
 
 export default function AddExpense() {
@@ -58,7 +62,21 @@ export default function AddExpense() {
   const burst = useSharedValue(0);
   const shake = useSharedValue(0);
 
-  const total = evalAmount(expr) ?? 0;
+  // Paid abroad? The amount is typed in that currency and converted to rupees at today's rate.
+  const [currency, setCurrency] = useState<string>((draft as any)?.currency ?? 'INR');
+  const [fx, setFx] = useState<{ rate: number; date: string } | null>(null);
+  const [fxError, setFxError] = useState<string | null>(null);
+  const [curPicker, setCurPicker] = useState(false);
+  useEffect(() => {
+    setFx(null);
+    setFxError(null);
+    if (currency === 'INR') return;
+    api(`/fx/${currency}`).then((r) => setFx({ rate: r.rate, date: r.date })).catch((e) => setFxError(e instanceof ApiError ? e.message : 'No rate right now'));
+  }, [currency]);
+  const foreign = currency !== 'INR';
+  const typed = evalAmount(expr) ?? 0; // in the chosen currency, x100
+  const originalMinor = NO_DECIMALS.includes(currency) ? Math.round(typed / 100) : typed;
+  const total = !foreign ? typed : fx ? Math.round((typed / 100) * fx.rate * 100) : 0;
   const hasOp = /[+\-×÷]/.test(expr);
   const selected = picked ?? members.map((m) => m.id);
   const payerId = payer ?? me?.id;
@@ -111,7 +129,7 @@ export default function AddExpense() {
       return;
     }
     setBusy(true);
-    const body: any = { description: desc.trim() || (category === 'other' ? 'Expense' : CATEGORY[category].label), amount_paise: total, category, split_type: type, payers: { [payerId]: total }, member_ids: selected };
+    const body: any = { currency, original_minor: foreign ? originalMinor : undefined, description: desc.trim() || (category === 'other' ? 'Expense' : CATEGORY[category].label), amount_paise: total, category, split_type: type, payers: { [payerId]: total }, member_ids: selected };
     if (type === 'exact') body.exact = shares;
     if (type === 'shares') body.weights = Object.fromEntries(selected.map((id) => [id, Math.round(num(id) || (vals[id] === undefined ? 1 : 0))]).filter(([, v]) => (v as number) > 0));
     if (type === 'percent') body.percents = Object.fromEntries(selected.map((id) => [id, num(id)]).filter(([, v]) => (v as number) > 0));
@@ -153,10 +171,32 @@ export default function AddExpense() {
                 {groups.data!.map((g) => <Chip key={g.id} label={g.name} emoji={g.emoji} active={g.id === groupId} onPress={() => setGroupId(g.id)} />)}
               </ScrollView>
             ) : null}
-            <View style={{ alignItems: 'center', gap: 4, marginTop: 10 }}>
+            <View style={{ alignItems: 'center' }}>
+              <Press onPress={() => setCurPicker(!curPicker)} style={styles.curBtn} label="Change currency">
+                <T v="small" w="bold" color={colors.purple}>{FLAG[currency] ?? '🌐'} {currency} ▾</T>
+              </Press>
+            </View>
+            {curPicker ? (
+              <Animated.View entering={FadeInDown.springify()}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+                  {CURRENCY_LIST.map((c) => <Chip key={c} label={c} emoji={FLAG[c]} active={c === currency} onPress={() => { haptic.tick(); setCurrency(c); setCurPicker(false); if (c !== 'INR' && type === 'exact') setType('equal'); }} />)}
+                </ScrollView>
+              </Animated.View>
+            ) : null}
+            <View style={{ alignItems: 'center', gap: 4, marginTop: 4 }}>
               <Text style={{ fontFamily: font.extra, fontSize: hasOp ? 30 : 54, color: expr ? colors.ink : colors.inkFaint, letterSpacing: -1 }} numberOfLines={1} adjustsFontSizeToFit>
-                {hasOp ? expr.replace(/-/g, '−') : `₹${expr || '0'}`}
+                {hasOp ? expr.replace(/-/g, '−') : `${SYMBOL[currency] ?? currency + ' '}${expr || '0'}`}
               </Text>
+              {foreign ? (
+                <Animated.View entering={FadeInDown.springify()} style={{ alignItems: 'center' }}>
+                  {fx ? (
+                    <>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}><T v="h3" color={colors.purple}>≈</T><RollingNumber text={rupees(total)} size={24} color={colors.purple} /></View>
+                      <T v="tiny" color={colors.inkFaint} style={{ textTransform: 'none', letterSpacing: 0 }}>1 {currency} = ₹{fx.rate.toFixed(2)} · rate of {fx.date}</T>
+                    </>
+                  ) : fxError ? <T v="small" color={colors.coral}>{fxError}</T> : <Dots />}
+                </Animated.View>
+              ) : null}
               {hasOp ? (
                 <Animated.View entering={FadeInDown.springify()} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                   <T v="h2" color={colors.purple}>=</T>
@@ -165,7 +205,7 @@ export default function AddExpense() {
               ) : null}
             </View>
             <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 8 }}>
-              {quick.map((q) => <Chip key={q} label={rupees(q)} emoji="✨" onPress={() => { haptic.tap(); setExpr(String(q / 100)); }} />)}
+              {foreign ? null : quick.map((q) => <Chip key={q} label={rupees(q)} emoji="✨" onPress={() => { haptic.tap(); setExpr(String(q / 100)); }} />)}
             </View>
             {/* "Add a note" pill grows into an input; chips filter as you type */}
             <Animated.View layout={LinearTransition.springify().damping(15)} style={{ alignItems: 'center', gap: 10 }}>
@@ -223,7 +263,7 @@ export default function AddExpense() {
         </View>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-          {TYPES.map((ty) => <Chip key={ty.key} label={t(ty.label)} active={type === ty.key} onPress={() => { haptic.tap(); setType(ty.key); setVals({}); }} />)}
+          {TYPES.filter((ty) => !foreign || ty.key !== 'exact').map((ty) => <Chip key={ty.key} label={t(ty.label)} active={type === ty.key} onPress={() => { haptic.tap(); setType(ty.key); setVals({}); }} />)}
         </ScrollView>
 
         <Animated.View style={[styles.block, shakeStyle]} layout={LinearTransition.springify()}>
@@ -264,6 +304,7 @@ export default function AddExpense() {
 
 const styles = StyleSheet.create({
   note: { height: 52, borderRadius: radius.pill, backgroundColor: '#fff', paddingHorizontal: 20, fontFamily: font.semi, fontSize: 15.5, color: colors.ink, borderWidth: 1.5, borderColor: colors.line, textAlign: 'center' },
+  curBtn: { backgroundColor: colors.purpleSoft, paddingHorizontal: 14, paddingVertical: 7, borderRadius: radius.pill },
   notePill: { backgroundColor: colors.purpleSoft, paddingHorizontal: 18, paddingVertical: 10, borderRadius: radius.pill },
   block: { backgroundColor: '#fff', borderRadius: radius.lg, padding: 14, gap: 10, ...shadow, shadowOpacity: 0.07 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 46 },

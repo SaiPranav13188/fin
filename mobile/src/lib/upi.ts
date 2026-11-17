@@ -34,3 +34,17 @@ export function buildLink(p: Payee, paise: number): string {
   params.push(['cu', 'INR']);
   return 'upi://pay?' + params.map(([k, v]) => `${k}=${encodeURIComponent(v).replace(/%40/g, '@')}`).join('&');
 }
+
+export type PayStatus = 'success' | 'failure' | 'submitted' | 'unknown' | 'no_app';
+
+/** UPI apps answer with a query string like "txnId=..&responseCode=00&Status=SUCCESS&txnRef=..". */
+export function readUpiResponse(extra: unknown, data?: string): PayStatus {
+  const e = (extra ?? {}) as Record<string, unknown>;
+  const raw = [e.response, e.Status, e.status, data].filter((v) => typeof v === 'string').join('&');
+  const bare = [e.Status, e.status].find((v) => typeof v === 'string') as string | undefined; // some apps send just the word
+  const status = (bare ?? /(?:^|&)status=([a-z]+)/i.exec(raw)?.[1])?.toLowerCase();
+  if (status === 'success') return 'success';
+  if (status === 'failure' || status === 'failed') return 'failure';
+  if (status === 'submitted' || status === 'pending') return 'submitted';
+  return 'unknown';
+}

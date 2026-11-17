@@ -10,6 +10,7 @@ import { ApiError, api } from '@/lib/api';
 import { useStore } from '@/lib/store';
 import { colors } from '@/lib/theme';
 import { haptic } from '@/lib/util';
+import { t } from '@/lib/i18n';
 
 export default function Forgot() {
   const params = useLocalSearchParams<{ email?: string }>();
@@ -63,20 +64,20 @@ export default function Forgot() {
             <Mascot size={104} mood={error ? 'worried' : step === 'code' ? 'happy' : 'thinking'} prop={step === 'code' ? 'letter' : 'none'}
               speech={error ?? (step === 'code' ? 'Check your inbox ✉️' : 'No worries, it happens!')} />
           </View>
-          <T v="h1" center>{step === 'email' ? 'Forgot password?' : 'Enter your code'}</T>
+          <T v="h1" center>{step === 'email' ? t("Forgot password?") : 'Enter your code'}</T>
           {step === 'email' ? (
             <Animated.View entering={FadeInDown} style={{ gap: 12 }}>
-              <T color={colors.inkSoft} center>We'll email you a 6-digit code.</T>
+              <T color={colors.inkSoft} center>{t("We'll email you a 6-digit code.")}</T>
               <Field label="Email" value={email} onChangeText={setEmail} placeholder="you@example.com" keyboardType="email-address" autoCapitalize="none" autoComplete="email" />
-              <Btn title="Send code" onPress={send} loading={busy} />
+              <Btn title={t("Send code")} onPress={send} loading={busy} />
             </Animated.View>
           ) : (
             <Animated.View entering={FadeInDown} style={{ gap: 12 }}>
               <T color={colors.inkSoft} center>{note} It can take a minute. Check spam too.</T>
               <Field label="6-digit code" value={code} onChangeText={(v) => setCode(v.replace(/\D/g, '').slice(0, 6))} placeholder="123456" keyboardType="number-pad" autoComplete="one-time-code" />
               <Field label="New password" value={password} onChangeText={setPassword} placeholder="8+ characters" secureTextEntry autoComplete="new-password" />
-              <Btn title="Set new password" onPress={reset} loading={busy} />
-              <Btn title="Send a new code" kind="ghost" onPress={send} />
+              <Btn title={t("Set new password")} onPress={reset} loading={busy} />
+              <Btn title={t("Send a new code")} kind="ghost" onPress={send} />
             </Animated.View>
           )}
         </ScrollView>

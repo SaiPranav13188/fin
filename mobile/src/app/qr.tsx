@@ -10,10 +10,12 @@ import { Confetti, Keypad, ScanBeam, SwipeToPay } from '@/components/fx';
 import { Mascot } from '@/components/Mascot';
 import { Avatar, Btn, RollingNumber, Screen, T } from '@/components/ui';
 import { sfx } from '@/lib/sfx';
+import { payWithUpi } from '@/lib/payapp';
 import { useStore } from '@/lib/store';
 import { Payee, UPI_MAX_PAISE, buildLink, parseUpi } from '@/lib/upi';
 import { colors, font, radius, shadow, spring } from '@/lib/theme';
 import { evalAmount, haptic, rupees } from '@/lib/util';
+import { t } from '@/lib/i18n';
 
 type Phase = 'scan' | 'amount' | 'pay' | 'ask' | 'done' | 'failed';
 
@@ -29,6 +31,8 @@ export default function QrPay() {
   const [boom, setBoom] = useState(0);
   const locked = useRef(false);
   const left = useRef(false);
+  const viaResult = useRef(false);
+  const [confirmed, setConfirmed] = useState(false);
   const focus = useSharedValue(0);
   const setPickedUpi = useStore((s) => s.setPickedUpi);
 
@@ -40,7 +44,7 @@ export default function QrPay() {
   useEffect(() => {
     const sub = AppState.addEventListener('change', (s) => {
       if (s !== 'active' && phase === 'pay') left.current = true;
-      if (s === 'active' && phase === 'pay' && left.current) setPhase('ask');
+      if (s === 'active' && phase === 'pay' && left.current && !viaResult.current) setPhase('ask');
     });
     return () => sub.remove();
   }, [phase]);
@@ -72,13 +76,16 @@ export default function QrPay() {
   const open = async () => {
     if (!payee) return;
     left.current = false;
-    try {
-      await Linking.openURL(buildLink(payee, paise));
-    } catch {
-      setPhase('failed'); // no UPI app on this phone
+    viaResult.current = Platform.OS === 'android';
+    const status = await payWithUpi(buildLink(payee, paise));
+    if (status === 'no_app') return setPhase('failed');
+    if (!viaResult.current) {
+      setTimeout(() => setPhase((ph) => (ph === 'pay' && !left.current ? 'ask' : ph)), 6000);
       return;
     }
-    setTimeout(() => setPhase((ph) => (ph === 'pay' && !left.current ? 'ask' : ph)), 6000);
+    if (status === 'success') { setConfirmed(true); setPhase('done'); setBoom(Date.now()); haptic.success(); sfx.success(); return; }
+    if (status === 'failure') { haptic.warn(); return setPhase('failed'); }
+    setPhase('ask');
   };
 
   const rescan = () => {
@@ -91,7 +98,7 @@ export default function QrPay() {
   const frame = useAnimatedStyle(() => ({ transform: [{ scale: 1 - focus.value * 0.08 }], borderColor: focus.value > 0.5 ? colors.mint : colors.pink }));
 
   return (
-    <Screen title={picking ? "Scan a friend's QR" : phase === 'scan' ? 'Scan & pay' : payee ? `Pay ${payee.name}` : ''}>
+    <Screen title={picking ? "Scan a friend's QR" : phase === 'scan' ? t("Scan & pay") : payee ? `Pay ${payee.name}` : ''}>
       <Confetti fire={boom} coins />
       {phase === 'scan' ? (
         <View style={{ flex: 1, gap: 14, paddingBottom: 20 }}>
@@ -114,7 +121,7 @@ export default function QrPay() {
             <Mascot size={78} mood={bad ? 'worried' : 'idle'} prop="magnifier" speech={bad ? "That isn't a UPI QR" : picking ? 'Point at their UPI QR' : 'Point at any UPI QR'} />
           </View>
           <View style={{ flex: 1 }} />
-          <T v="small" color={colors.inkSoft} center>Or type a UPI ID</T>
+          <T v="small" color={colors.inkSoft} center>{t("Or type a UPI ID")}</T>
           <View style={{ flexDirection: 'row', gap: 8 }}>
             <TextInput value={typed} onChangeText={setTyped} placeholder="name@okhdfcbank" placeholderTextColor={colors.inkFaint} autoCapitalize="none" autoCorrect={false}
               style={styles.input} onSubmitEditing={() => accept(typed)} returnKeyType="go" />
@@ -136,7 +143,7 @@ export default function QrPay() {
           </View>
           <View style={{ gap: 12 }}>
             <Keypad value={expr} onChange={setExpr} />
-            <Btn title="Next" onPress={() => setPhase('pay')} disabled={!paise || tooMuch} />
+            <Btn title={t("Next")} onPress={() => setPhase('pay')} disabled={!paise || tooMuch} />
           </View>
         </Animated.View>
       ) : null}
@@ -154,7 +161,7 @@ export default function QrPay() {
             </Animated.View>
           </View>
           <SwipeToPay label="Swipe to pay" onDone={open} />
-          <Btn title="Scan a different QR" kind="ghost" onPress={rescan} />
+          <Btn title={t("Scan a different QR")} kind="ghost" onPress={rescan} />
         </Animated.View>
       ) : null}
 
@@ -186,8 +193,9 @@ export default function QrPay() {
           <Mascot size={150} mood="cheer" />
           <T v="h1" center>Paid!</T>
           <T color={colors.inkSoft} center>{rupees(paise)} to {payee.name}</T>
+          {confirmed ? <T v="small" w="bold" color={colors.mint}>{t("✓ Confirmed by your UPI app")}</T> : null}
           <View style={{ alignSelf: 'stretch', gap: 10, marginTop: 20 }}>
-            <Btn title="Split this with a group" icon="🍕" onPress={() => router.replace({ pathname: '/add-expense', params: { draft: JSON.stringify({ amount_paise: paise, description: payee.name, category: 'other', payers: {}, member_ids: [] }) } })} />
+            <Btn title={t("Split this with a group")} icon="🍕" onPress={() => router.replace({ pathname: '/add-expense', params: { draft: JSON.stringify({ amount_paise: paise, description: payee.name, category: 'other', payers: {}, member_ids: [] }) } })} />
             <Btn title="Done" kind="soft" onPress={() => (router.canGoBack() ? router.back() : router.replace('/home'))} />
           </View>
         </Animated.View>
