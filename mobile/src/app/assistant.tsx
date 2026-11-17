@@ -2,7 +2,8 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { ExpoSpeechRecognitionModule, useSpeechRecognitionEvent } from 'expo-speech-recognition';
 import React, { useEffect, useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import Animated, {
   FadeIn, FadeInDown, FadeOut, LinearTransition, SlideInDown, useAnimatedStyle, useSharedValue, withRepeat, withSequence, withSpring,
   withTiming,
@@ -157,7 +158,7 @@ export default function Assistant() {
   const unsure = (field: string) => !!result?.questions?.some((q: any) => q.field === field);
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
       <Animated.View entering={FadeIn.duration(180)} style={[StyleSheet.absoluteFill, { backgroundColor: colors.dim }]}>
         <Pressable style={{ flex: 1 }} onPress={close} accessibilityLabel="Close" />
       </Animated.View>

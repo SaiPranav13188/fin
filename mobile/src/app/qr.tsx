@@ -4,6 +4,7 @@ import * as Linking from 'expo-linking';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import { AppState, Platform, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import Animated, { FadeIn, FadeInDown, ZoomIn, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 
 import { Confetti, Keypad, ScanBeam, SwipeToPay } from '@/components/fx';
@@ -101,7 +102,7 @@ export default function QrPay() {
     <Screen title={picking ? "Scan a friend's QR" : phase === 'scan' ? t("Scan & pay") : payee ? `Pay ${payee.name}` : ''}>
       <Confetti fire={boom} coins />
       {phase === 'scan' ? (
-        <View style={{ flex: 1, gap: 14, paddingBottom: 20 }}>
+        <KeyboardAwareScrollView bottomOffset={24} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1, gap: 14, paddingBottom: 20 }}>
           <Animated.View style={[styles.finder, frame]}>
             {Platform.OS !== 'web' && permission?.granted ? (
               <CameraView style={StyleSheet.absoluteFill} facing="back" barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
@@ -127,7 +128,7 @@ export default function QrPay() {
               style={styles.input} onSubmitEditing={() => accept(typed)} returnKeyType="go" />
             <Btn small title="Go" kind="soft" onPress={() => accept(typed)} disabled={!typed.trim()} />
           </View>
-        </View>
+        </KeyboardAwareScrollView>
       ) : null}
 
       {phase === 'amount' && payee ? (

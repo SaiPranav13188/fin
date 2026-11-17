@@ -10,6 +10,7 @@ import { StatusBar } from 'expo-status-bar';
 import React, { useEffect } from 'react';
 import { AccessibilityInfo } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { Confetti } from '@/components/fx';
@@ -74,6 +75,7 @@ function RootLayout() {
   if (!ready || !fontsLoaded) return null;
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.bg }}>
+      <KeyboardProvider>
       <SafeAreaProvider>
         <ShareIntentProvider options={{ resetOnBackground: true }}>
         <ShareHandler />
@@ -92,6 +94,7 @@ function RootLayout() {
         </QueryClientProvider>
         </ShareIntentProvider>
       </SafeAreaProvider>
+      </KeyboardProvider>
     </GestureHandlerRootView>
   );
 }

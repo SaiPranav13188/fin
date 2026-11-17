@@ -1,6 +1,7 @@
 /** Insights: this month's spending by category, plus questions answered from your own records. */
 import React, { useEffect, useState } from 'react';
-import { ScrollView, Text, TextInput, View } from 'react-native';
+import { Text, TextInput, View } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withDelay, withSpring } from 'react-native-reanimated';
 
 import { Mascot } from '@/components/Mascot';
@@ -72,7 +73,7 @@ export default function Insights() {
   const max = cats[0]?.[1] ?? 1;
   return (
     <Screen title={t("Insights")}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 16, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
+      <KeyboardAwareScrollView bottomOffset={24} showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 16, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
         {wrap.data?.has_data ? (
           <Press onPress={() => router.push('/wrapped')} scaleTo={0.97} label="Open your month wrapped">
             <LinearGradient colors={colors.grad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ borderRadius: radius.lg, padding: 18, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
@@ -124,7 +125,7 @@ export default function Insights() {
           </Press>
         </View>
         <T v="small" color={colors.inkFaint} center>{t("Answers come only from your own records. Fin can read them, never change them.")}</T>
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </Screen>
   );
 }

@@ -1,7 +1,8 @@
 import * as Linking from 'expo-linking';
 import React, { useEffect, useState } from 'react';
 import * as LocalAuthentication from 'expo-local-authentication';
-import { Alert, Platform, ScrollView, Switch, View } from 'react-native';
+import { Alert, Platform, Switch, View } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 
 import { RequestQr } from '@/components/RequestQr';
 import { UPI_APPS } from '@/lib/payapp';
@@ -75,7 +76,7 @@ export default function Profile() {
 
   return (
     <Screen title={t("You")}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 16, paddingBottom: 50 }} keyboardShouldPersistTaps="handled">
+      <KeyboardAwareScrollView bottomOffset={24} showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 16, paddingBottom: 50 }} keyboardShouldPersistTaps="handled">
         <View style={{ alignItems: 'center' }}><Mascot size={110} mood="happy" /></View>
         <Card style={{ gap: 12 }}>
           <Field label={t("Name")} value={name} onChangeText={setName} maxLength={80} />
@@ -119,7 +120,7 @@ export default function Profile() {
         <Btn title={t("Log out")} kind="soft" onPress={logout} />
         <Btn title={t("Delete my account")} kind="danger" onPress={remove} />
         <T v="small" color={colors.inkFaint} center>{t("Fin splits and tracks bills and opens your own UPI app. It does not hold money, offer loans or process payments.")}</T>
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </Screen>
   );
 }

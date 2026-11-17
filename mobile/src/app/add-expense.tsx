@@ -2,6 +2,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import Animated, {
   FadeIn, FadeInDown, FadeOut, LinearTransition, ZoomIn, useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming,
 } from 'react-native-reanimated';
@@ -164,7 +165,7 @@ export default function AddExpense() {
   if (step === 'amount') {
     return (
       <Screen title={t("Add expense")}>
-        <View style={{ flex: 1, justifyContent: 'space-between', paddingBottom: 16 }}>
+        <KeyboardAwareScrollView bottomOffset={24} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1, justifyContent: 'space-between', paddingBottom: 16 }}>
           <View style={{ gap: 14 }}>
             {(groups.data?.length ?? 0) > 1 ? (
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
@@ -227,7 +228,7 @@ export default function AddExpense() {
             <Keypad value={expr} onChange={setExpr} />
             <Btn title={t("Next: who's splitting?")} onPress={() => { if (!total) return haptic.warn(); setStep('split'); }} disabled={!total} />
           </View>
-        </View>
+        </KeyboardAwareScrollView>
       </Screen>
     );
   }
@@ -235,7 +236,7 @@ export default function AddExpense() {
   return (
     <Screen title={sliced ? t("Sliced!") : t("Split it")}>
       <Confetti fire={sliced} />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 14, paddingBottom: 30 }} keyboardShouldPersistTaps="handled">
+      <KeyboardAwareScrollView bottomOffset={24} showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 14, paddingBottom: 30 }} keyboardShouldPersistTaps="handled">
         <View style={{ alignItems: 'center' }}>
           <PizzaChart values={members.map((m) => shares[m.id] ?? 0)} size={176} burst={burst} />
           <View style={{ position: 'absolute', right: 0, bottom: -6 }}>
@@ -297,7 +298,7 @@ export default function AddExpense() {
           <Animated.View entering={FadeIn} exiting={FadeOut} style={{ alignItems: 'center' }}><T v="small" w="bold" color={colors.coral}>💧 {problem}</T></Animated.View>
         ) : null}
         <Btn title={sliced ? 'Sliced! 🍕' : `Split ${rupees(total)}`} onPress={save} loading={busy && !sliced} disabled={!!sliced} />
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </Screen>
   );
 }

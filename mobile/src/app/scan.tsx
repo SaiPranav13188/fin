@@ -3,6 +3,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Image, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { FadeIn, FadeInDown, LinearTransition, ZoomIn, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
@@ -199,7 +200,7 @@ export default function Scan() {
         </View>
       ) : (
         <View style={{ flex: 1 }}>
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingBottom: 16 }} keyboardShouldPersistTaps="handled" onScrollEndDrag={measure}>
+          <KeyboardAwareScrollView bottomOffset={24} showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingBottom: 16 }} keyboardShouldPersistTaps="handled" onScrollEndDrag={measure}>
             <Animated.View entering={FadeIn} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               <Mascot size={58} mood={mood} prop={prop} />
               <View style={{ flex: 1 }}>
@@ -226,7 +227,7 @@ export default function Scan() {
               </View>
               {advice ? <Animated.View entering={FadeInDown}><T v="small" color={colors.purple} w="semi">✨ {advice}</T></Animated.View> : null}
             </Animated.View>
-          </ScrollView>
+          </KeyboardAwareScrollView>
           {/* drop targets */}
           <View style={styles.tray} onLayout={measure}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, paddingHorizontal: 4 }} onScrollEndDrag={measure} onMomentumScrollEnd={measure}>

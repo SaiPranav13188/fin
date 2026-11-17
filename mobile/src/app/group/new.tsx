@@ -1,7 +1,8 @@
 /** Make a group: friends spring into seats around a table, and Fin holds a sign that flips as you type. */
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, View } from 'react-native';
+import { ScrollView, Text, TextInput, View } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import Animated, { ZoomIn, ZoomOut, useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 
 import { Mascot } from '@/components/Mascot';
@@ -65,8 +66,7 @@ export default function NewGroup() {
   const R = 104;
   return (
     <Screen title={t("New group")}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-        <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 16, paddingBottom: 30 }}>
+      <KeyboardAwareScrollView bottomOffset={24} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 16, paddingBottom: 30 }}>
           {/* the huddle */}
           <View style={{ height: 270, alignItems: 'center', justifyContent: 'center' }}>
             <View style={{ width: 150, height: 150, borderRadius: 75, backgroundColor: colors.pinkSoft, alignItems: 'center', justifyContent: 'center', borderWidth: 6, borderColor: '#fff', ...shadow }}>
@@ -121,8 +121,7 @@ export default function NewGroup() {
             </View>
           ) : null}
           <Btn title={t("Create group")} onPress={create} loading={busy} style={{ marginTop: 8 }} />
-        </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
     </Screen>
   );
 }

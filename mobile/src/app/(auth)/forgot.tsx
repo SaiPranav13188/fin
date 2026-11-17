@@ -1,7 +1,8 @@
 /** Forgot password: email a 6-digit code, then set a new password with it. */
 import { useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
+import { View } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { Mascot } from '@/components/Mascot';
@@ -58,8 +59,7 @@ export default function Forgot() {
 
   return (
     <Screen title="">
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-        <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ gap: 14, paddingBottom: 40 }}>
+      <KeyboardAwareScrollView bottomOffset={24} keyboardShouldPersistTaps="handled" contentContainerStyle={{ gap: 14, paddingBottom: 40 }}>
           <View style={{ alignItems: 'center', height: 180, justifyContent: 'flex-end' }}>
             <Mascot size={104} mood={error ? 'worried' : step === 'code' ? 'happy' : 'thinking'} prop={step === 'code' ? 'letter' : 'none'}
               speech={error ?? (step === 'code' ? 'Check your inbox ✉️' : 'No worries, it happens!')} />
@@ -80,8 +80,7 @@ export default function Forgot() {
               <Btn title={t("Send a new code")} kind="ghost" onPress={send} />
             </Animated.View>
           )}
-        </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
     </Screen>
   );
 }

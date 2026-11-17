@@ -1,6 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useMemo, useRef, useState } from 'react';
-import { Alert, FlatList, KeyboardAvoidingView, Platform, Share, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, FlatList, Share, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { FadeInDown, LinearTransition, interpolate, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -279,7 +280,7 @@ export default function GroupScreen() {
         <Btn small title={t("Add")} icon="＋" onPress={() => router.push({ pathname: '/add-expense', params: { group: id } })} />
       </View>
       {group.data ? <GoalsStrip groupId={id} members={members} /> : null}
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
         {messages.isLoading ? <View style={{ padding: 20, gap: 12 }}><Skeleton h={150} /><Skeleton h={150} /></View> : (
           <FlatList
             ref={list}

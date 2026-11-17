@@ -3,9 +3,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useEffect } from 'react';
 import {
-  ActivityIndicator, Dimensions, KeyboardAvoidingView, Modal, Platform, Pressable, Share, StyleProp, StyleSheet, Text, TextInput,
+  ActivityIndicator, Dimensions, Modal, Pressable, Share, StyleProp, StyleSheet, Text, TextInput,
   TextInputProps, TextProps, TextStyle, View, ViewStyle,
 } from 'react-native';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   FadeIn, FadeInDown, FadeOut, interpolate, useAnimatedStyle, useSharedValue, withDelay, withRepeat, withSequence, withSpring,
@@ -184,8 +185,8 @@ export function Sheet({ visible, onClose, children, title }: { visible: boolean;
   const sheet = useAnimatedStyle(() => ({ transform: [{ translateY: y.value }] }));
   const dim = useAnimatedStyle(() => ({ opacity: interpolate(y.value, [0, H * 0.6], [1, 0], 'clamp') }));
   return (
-    <Modal visible={visible} transparent animationType="none" onRequestClose={onClose} statusBarTranslucent>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, justifyContent: 'flex-end' }}>
+    <Modal visible={visible} transparent animationType="none" onRequestClose={onClose} statusBarTranslucent navigationBarTranslucent>
+      <KeyboardAvoidingView behavior="padding" style={{ flex: 1, justifyContent: 'flex-end' }}>
         <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: colors.dim }, dim]}>
           <Pressable style={{ flex: 1 }} onPress={onClose} accessibilityLabel="Close" />
         </Animated.View>

@@ -1,6 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
+import { View } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import Animated, { FadeInDown, LinearTransition } from 'react-native-reanimated';
 
 import { Mascot, Mood } from '@/components/Mascot';
@@ -50,8 +51,7 @@ export default function Login() {
 
   return (
     <Screen title="">
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-        <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40, gap: 14 }}>
+      <KeyboardAwareScrollView bottomOffset={24} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40, gap: 14 }}>
           <View style={{ alignItems: 'center', height: 190, justifyContent: 'flex-end' }}>
             <Mascot size={112} mood={mood} speech={speech} />
           </View>
@@ -80,8 +80,7 @@ export default function Login() {
             <T v="small" w="bold" color={colors.purple}>{mode === 'signup' ? t("I already have an account") : t("New here? Create an account")}</T>
           </Press>
           <T v="small" color={colors.inkFaint} center>{t("Fin never holds your money or asks for your UPI PIN.")}</T>
-        </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
     </Screen>
   );
 }
