@@ -107,6 +107,74 @@ def summary(user: User = Depends(current_user), db: Session = Depends(get_db)):
             "subscriptions_monthly_paise": sum(s.amount_paise for s in subs if s.frequency == "monthly")}
 
 
+def _month_bounds(month: str | None) -> tuple[date, date, date]:
+    today = date.today()
+    try:
+        y, m = (int(x) for x in month.split("-")) if month else (today.year, today.month)
+        start = date(y, m, 1)
+    except Exception as err:
+        raise HTTPException(422, "month must look like 2026-11") from err
+    nxt = date(y + 1, 1, 1) if m == 12 else date(y, m + 1, 1)
+    prev = date(y - 1, 12, 1) if m == 1 else date(y, m - 1, 1)
+    return prev, start, nxt
+
+
+def _collect(db: Session, user: User, lo: date, hi: date) -> dict:
+    """The user's own share of everything spent between lo (inclusive) and hi (exclusive)."""
+    from collections import Counter
+    total, count = 0, 0
+    by_cat: Counter = Counter()
+    by_day: Counter = Counter()
+    buddies: Counter = Counter()
+    groups: set[str] = set()
+    biggest = None
+    paid_back = 0
+    for g, me in ledger.user_groups(db, user):
+        names = {m.id: m.name for m in g.members}
+        for e in db.scalars(select(Expense).where(Expense.group_id == g.id, Expense.spent_on >= lo, Expense.spent_on < hi)):
+            mine = next((s.amount_paise for s in e.shares if s.member_id == me.id), 0)
+            if not mine:
+                continue
+            total += mine
+            count += 1
+            by_cat[e.category] += mine
+            by_day[e.spent_on.weekday()] += mine
+            groups.add(g.id)
+            for s in e.shares:
+                if s.member_id != me.id and s.amount_paise:
+                    buddies[names.get(s.member_id, "Someone")] += 1
+            if biggest is None or mine > biggest["paise"]:
+                biggest = {"description": e.description, "paise": mine, "group": g.name, "category": e.category}
+        from ..models import Settlement
+        for st in db.scalars(select(Settlement).where(Settlement.group_id == g.id, Settlement.from_member == me.id)):
+            if lo <= st.created_at.date() < hi:
+                paid_back += st.amount_paise
+    return {"total": total, "count": count, "by_cat": by_cat, "by_day": by_day, "buddies": buddies,
+            "groups": len(groups), "biggest": biggest, "paid_back": paid_back}
+
+
+@router.get("/me/wrapped")
+def wrapped(month: str | None = None, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    """A month in review: how much you spent, where, who with, and how it compares with last month."""
+    prev, start, nxt = _month_bounds(month)
+    cur, old = _collect(db, user, start, nxt), _collect(db, user, prev, start)
+    pct = lambda a, b: round((a - b) * 100 / b) if b else None  # noqa: E731
+    cats = [{"category": c, "paise": v, "prev_paise": old["by_cat"].get(c, 0), "change_pct": pct(v, old["by_cat"].get(c, 0))}
+            for c, v in cur["by_cat"].most_common()]
+    weekdays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+    top_day = cur["by_day"].most_common(1)
+    buddy = cur["buddies"].most_common(1)
+    return {
+        "month": start.isoformat()[:7], "month_name": start.strftime("%B"),
+        "total_paise": cur["total"], "prev_total_paise": old["total"], "change_pct": pct(cur["total"], old["total"]),
+        "expense_count": cur["count"], "groups_active": cur["groups"], "paid_back_paise": cur["paid_back"],
+        "by_category": cats, "biggest": cur["biggest"],
+        "top_buddy": {"name": buddy[0][0], "count": buddy[0][1]} if buddy else None,
+        "busiest_day": weekdays[top_day[0][0]] if top_day else None,
+        "has_data": cur["count"] > 0,
+    }
+
+
 @router.get("/groups/{group_id}/export.csv")
 def export_csv(group_id: str, user: User = Depends(current_user), db: Session = Depends(get_db)):
     g, _ = ledger.get_group(db, user, group_id)

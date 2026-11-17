@@ -1,6 +1,9 @@
 import * as Linking from 'expo-linking';
 import React, { useEffect, useState } from 'react';
-import { Alert, ScrollView, Switch, View } from 'react-native';
+import * as LocalAuthentication from 'expo-local-authentication';
+import { Alert, Platform, ScrollView, Switch, View } from 'react-native';
+
+import { RequestQr } from '@/components/RequestQr';
 
 import { Mascot } from '@/components/Mascot';
 import { Btn, Card, Chip, Field, Screen, T } from '@/components/ui';
@@ -19,6 +22,7 @@ export default function Profile() {
   const [name, setName] = useState('');
   const [upi, setUpi] = useState('');
   const [busy, setBusy] = useState(false);
+  const [qr, setQr] = useState(false);
   useEffect(() => {
     if (me.data) { setName(me.data.name); setUpi(me.data.upi_id ?? ''); }
   }, [me.data]);
@@ -36,6 +40,19 @@ export default function Profile() {
       setBusy(false);
     }
   };
+  const toggleLock = async (on: boolean) => {
+    if (!on) return setSetting('lock', false);
+    try {
+      if (Platform.OS === 'web' || !(await LocalAuthentication.hasHardwareAsync()) || !(await LocalAuthentication.isEnrolledAsync())) {
+        return showToast('Set up a fingerprint, face or screen lock in your phone settings first', 'warn');
+      }
+      const r = await LocalAuthentication.authenticateAsync({ promptMessage: 'Confirm it is you' });
+      if (r.success) { setSetting('lock', true); haptic.success(); }
+    } catch {
+      showToast("Couldn't turn the lock on", 'warn');
+    }
+  };
+  const myLink = me.data?.upi_id ? `upi://pay?pa=${me.data.upi_id}&pn=${encodeURIComponent(me.data.name)}&cu=INR` : null;
   const logout = async () => {
     if (refresh) api('/auth/logout', { body: { refresh_token: refresh }, auth: false }).catch(() => {});
     await setTokens(null, null);
@@ -48,10 +65,10 @@ export default function Profile() {
       } },
     ]);
 
-  const toggle = (key: 'haptics' | 'reduceMotion' | 'sound', label: string, sub: string) => (
+  const toggle = (key: 'haptics' | 'reduceMotion' | 'sound' | 'lock', label: string, sub: string) => (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
       <View style={{ flex: 1 }}><T w="bold">{label}</T><T v="small" color={colors.inkSoft}>{sub}</T></View>
-      <Switch value={settings[key]} onValueChange={(v) => { setSetting(key, v); haptic.tick(); }} trackColor={{ true: colors.pink, false: colors.line }} thumbColor="#fff" />
+      <Switch value={settings[key]} onValueChange={(v) => { if (key === 'lock') return toggleLock(v); setSetting(key, v); haptic.tick(); }} trackColor={{ true: colors.pink, false: colors.line }} thumbColor="#fff" />
     </View>
   );
 
@@ -75,9 +92,12 @@ export default function Profile() {
         </Card>
         <Card index={2} style={{ gap: 16 }}>
           {toggle('haptics', t('Haptics'), t("Little taps as you swipe and pay"))}
+          {toggle('lock', 'App lock', 'Ask for your fingerprint or face when Fin opens')}
           {toggle('sound', 'Sounds', 'A coin clink and a soft chime. Follows silent mode')}
           {toggle('reduceMotion', t("Reduce motion"), t("Swap big animations for simple fades"))}
         </Card>
+        <Btn title="My payment QR" kind="soft" icon="📱" onPress={() => setQr(true)} />
+        <RequestQr visible={qr} onClose={() => setQr(false)} link={myLink} title="Pay me" sub="Anyone can scan this with GPay, PhonePe, Paytm or any UPI app and type the amount." />
         <Card index={3} style={{ gap: 12 }}>
           <T v="tiny" color={colors.inkFaint}>Fin's outfit</T>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>

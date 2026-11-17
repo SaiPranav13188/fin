@@ -13,6 +13,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { Confetti } from '@/components/fx';
 import { Mascot } from '@/components/Mascot';
+import { LockHost } from '@/components/LockScreen';
 import { MomentHost, ToastHost } from '@/components/ui';
 import { queryClient, refreshAll } from '@/lib/hooks';
 import { startQueueSync } from '@/lib/offline';
@@ -61,9 +62,11 @@ export default function RootLayout() {
           <Stack key={lang} screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg }, animation: 'slide_from_right' }}>
             <Stack.Screen name="assistant" options={{ presentation: 'transparentModal', animation: 'fade' }} />
             <Stack.Screen name="settle" options={{ animation: 'slide_from_bottom' }} />
+            <Stack.Screen name="wrapped" options={{ animation: 'fade_from_bottom', presentation: 'fullScreenModal' }} />
             <Stack.Screen name="add-expense" options={{ animation: 'slide_from_bottom' }} />
           </Stack>
           <ToastHost />
+          <LockHost />
           <MomentHost mascot={<Mascot size={120} mood="cheer" />} confetti={(fire) => <Confetti fire={fire} coins />} />
         </QueryClientProvider>
       </SafeAreaProvider>

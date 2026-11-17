@@ -183,3 +183,24 @@ def test_reset_code_attempts_are_limited(client, sai, monkeypatch):
         client.post("/auth/reset", json={"email": "sai@example.com", "code": wrong, "password": "newpassword1"})
     # after 5 wrong tries even the right code is refused
     assert client.post("/auth/reset", json={"email": "sai@example.com", "code": code, "password": "newpassword1"}).status_code == 400
+
+
+def test_monthly_wrapped(sai, trip):
+    from datetime import date
+    g, ids = trip
+    gid = g["id"]
+    first = date.today().replace(day=1)
+    sai.post(f"/groups/{gid}/expenses", json={"description": "Pizza", "amount_paise": 90000, "category": "food", "spent_on": str(first)})
+    sai.post(f"/groups/{gid}/expenses", json={"description": "Cab", "amount_paise": 30000, "category": "travel", "spent_on": str(first)})
+    sai.post(f"/groups/{gid}/expenses", json={"description": "Old dinner", "amount_paise": 60000, "category": "food", "spent_on": "2020-01-05"})
+    w = sai.get("/me/wrapped").json()
+    assert w["has_data"] and w["expense_count"] == 2
+    assert w["total_paise"] == 40000  # Sai's third of 900 + 300
+    assert [c["category"] for c in w["by_category"]] == ["food", "travel"] and w["by_category"][0]["paise"] == 30000
+    assert w["biggest"]["description"] == "Pizza" and w["top_buddy"]["count"] == 2
+    assert w["change_pct"] is None  # nothing last month to compare with
+    old = sai.get("/me/wrapped?month=2020-01").json()
+    assert old["total_paise"] == 20000 and old["by_category"][0]["category"] == "food"
+    assert sai.get("/me/wrapped?month=nope").status_code == 422
+    from tests.conftest import Api
+    assert Api(sai.c, "Eve").get("/me/wrapped").json()["has_data"] is False

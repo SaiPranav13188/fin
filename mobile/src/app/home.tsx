@@ -235,6 +235,13 @@ export default function Home() {
             <Press onPress={() => router.push('/insights')} style={[styles.tile, { backgroundColor: colors.purpleSoft }]}><Text style={{ fontSize: 24 }}>📊</Text><T v="small" w="bold">{t("Insights")}</T></Press>
             <Press onPress={() => router.push('/reminders')} style={[styles.tile, { backgroundColor: colors.amberSoft }]}><Text style={{ fontSize: 24 }}>📅</Text><T v="small" w="bold">{t("Bills & subs")}</T></Press>
           </View>
+          <Press onPress={() => router.push('/wrapped')} scaleTo={0.97} label="Your month wrapped">
+            <LinearGradient colors={['#7B4DFF', '#3BA7FF']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[styles.tile, { flexDirection: 'row', alignItems: 'center', gap: 12 }]}>
+              <Text style={{ fontSize: 26 }}>✨</Text>
+              <View style={{ flex: 1 }}><T w="bold" color="#fff">Your month, wrapped</T><T v="small" color="rgba(255,255,255,0.88)">Where your money went, as a story</T></View>
+              <Text style={{ fontSize: 22, color: '#fff' }}>›</Text>
+            </LinearGradient>
+          </Press>
         </Animated.View>
       </ScrollView>
 

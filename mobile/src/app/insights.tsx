@@ -6,6 +6,9 @@ import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withDelay, with
 import { Mascot } from '@/components/Mascot';
 import { Card, Chip, Dots, Empty, Press, RollingNumber, Screen, Skeleton, T } from '@/components/ui';
 import { ApiError, api } from '@/lib/api';
+import { useQuery } from '@tanstack/react-query';
+import { LinearGradient } from 'expo-linear-gradient';
+import { router } from 'expo-router';
 import { useSummary } from '@/lib/hooks';
 import { CATEGORY, colors, font, radius, spring } from '@/lib/theme';
 import { haptic, rupees } from '@/lib/util';
@@ -20,8 +23,32 @@ function Bar({ pct, color, i }: { pct: number; color: string; i: number }) {
 
 const ASK = ['Who owes me the most?', 'How much did I spend on food this month?', 'What do I owe?', 'How much are my subscriptions?'];
 
+type Wrap = { month_name: string; has_data: boolean; change_pct: number | null; total_paise: number; prev_total_paise: number;
+  by_category: { category: string; paise: number; prev_paise: number; change_pct: number | null }[] };
+
+/** Plain-language cards comparing this month with last month. Only real numbers, nothing guessed. */
+function trendCards(w: Wrap): { emoji: string; text: string; tone: 'up' | 'down' | 'info' }[] {
+  const out: { emoji: string; text: string; tone: 'up' | 'down' | 'info' }[] = [];
+  if (w.change_pct !== null && Math.abs(w.change_pct) >= 5) {
+    out.push({ emoji: w.change_pct > 0 ? '📈' : '📉', tone: w.change_pct > 0 ? 'up' : 'down',
+      text: `You spent ${Math.abs(w.change_pct)}% ${w.change_pct > 0 ? 'more' : 'less'} than last month (${rupees(w.total_paise)} vs ${rupees(w.prev_total_paise)}).` });
+  }
+  for (const c of w.by_category) {
+    if (out.length >= 4) break;
+    const cat = CATEGORY[c.category] ?? CATEGORY.other;
+    if (c.change_pct !== null && Math.abs(c.change_pct) >= 20 && Math.max(c.paise, c.prev_paise) >= 20000) {
+      out.push({ emoji: cat.emoji, tone: c.change_pct > 0 ? 'up' : 'down', text: `${cat.label}: ${Math.abs(c.change_pct)}% ${c.change_pct > 0 ? 'more' : 'less'} than last month.` });
+    } else if (c.change_pct === null && c.paise >= 20000) {
+      out.push({ emoji: cat.emoji, tone: 'info', text: `New this month: ${rupees(c.paise)} on ${cat.label.toLowerCase()}.` });
+    }
+  }
+  return out;
+}
+
 export default function Insights() {
   const summary = useSummary();
+  const wrap = useQuery({ queryKey: ['wrapped'], queryFn: () => api<Wrap>('/me/wrapped') });
+  const trends = wrap.data?.has_data ? trendCards(wrap.data) : [];
   const [q, setQ] = useState('');
   const [busy, setBusy] = useState(false);
   const [answer, setAnswer] = useState<{ answer: string; source: string } | null>(null);
@@ -46,6 +73,22 @@ export default function Insights() {
   return (
     <Screen title={t("Insights")}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 16, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
+        {wrap.data?.has_data ? (
+          <Press onPress={() => router.push('/wrapped')} scaleTo={0.97} label="Open your month wrapped">
+            <LinearGradient colors={colors.grad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ borderRadius: radius.lg, padding: 18, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <Text style={{ fontSize: 34 }}>✨</Text>
+              <View style={{ flex: 1 }}><T v="h3" color="#fff">Your {wrap.data.month_name} wrapped</T><T v="small" color="rgba(255,255,255,0.9)">Your month as a story. Tap to play.</T></View>
+              <Text style={{ fontSize: 22, color: '#fff' }}>›</Text>
+            </LinearGradient>
+          </Press>
+        ) : null}
+        {trends.map((c, i) => (
+          <Animated.View key={c.text} entering={FadeInDown.delay(i * 90).springify().damping(14)}
+            style={{ flexDirection: 'row', gap: 12, alignItems: 'center', padding: 14, borderRadius: radius.md, backgroundColor: c.tone === 'up' ? colors.coralSoft : c.tone === 'down' ? colors.mintSoft : colors.purpleSoft }}>
+            <Text style={{ fontSize: 24 }}>{c.emoji}</Text>
+            <T w="semi" style={{ flex: 1 }}>{c.text}</T>
+          </Animated.View>
+        ))}
         <Card>
           <T v="tiny" color={colors.inkFaint}>{t("Your share this month")}</T>
           {summary.isLoading ? <Skeleton h={44} w={160} /> : <RollingNumber text={rupees(summary.data?.month_spend_paise ?? 0)} size={40} />}

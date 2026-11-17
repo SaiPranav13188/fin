@@ -11,6 +11,7 @@ import Svg, { Path } from 'react-native-svg';
 
 import { Mascot } from '@/components/Mascot';
 import { Confetti, SwipeToPay } from '@/components/fx';
+import { RequestQr } from '@/components/RequestQr';
 import { Avatar, Btn, Card, Chip, Empty, Press, RollingNumber, Screen, Skeleton, T } from '@/components/ui';
 import { ApiError, SafetyFlag, api } from '@/lib/api';
 import { refreshAll, useGroup, useGroups } from '@/lib/hooks';
@@ -76,6 +77,7 @@ export default function Settle() {
   const [waited, setWaited] = useState(0);
   const leftApp = useRef(false);
   const showToast = useStore((s) => s.showToast);
+  const [qrFor, setQrFor] = useState<Step | null>(null);
   const float = useSharedValue(0);
 
   const load = async () => {
@@ -157,6 +159,7 @@ export default function Settle() {
   const title = phase === 'plan' ? t("Settle up") : phase === 'success' ? '' : cur ? `Pay ${cur.to_name}` : '';
   return (
     <Screen title={title}>
+      <RequestQr visible={!!qrFor} onClose={() => setQrFor(null)} link={qrFor?.upi_link ?? null} amountPaise={qrFor?.amount_paise} title={qrFor ? `${qrFor.from_name} pays you` : ''} />
       <Confetti fire={boom} coins />
       {phase === 'plan' ? (
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 14, paddingBottom: 40 }}>
@@ -190,6 +193,7 @@ export default function Settle() {
                     </View>
                   ) : (
                     <View style={{ flexDirection: 'row', gap: 8 }}>
+                      <Btn small title="Show QR" icon="📱" onPress={() => setQrFor(s)} style={{ flex: 1 }} />
                       <Btn small title={t("Got it in cash")} kind="soft" onPress={() => record(s, 'cash')} style={{ flex: 1 }} />
                       <Btn small title={t("Remind")} icon="💌" kind="soft" style={{ flex: 1 }}
                         onPress={() => router.push({ pathname: '/assistant', params: { group: groupId, nudge: s.from_member } })} />
