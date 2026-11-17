@@ -192,11 +192,13 @@ export default function Settle() {
                       <Btn small title={t("Pay with UPI")} onPress={() => start(s)} loading={busy && cur === s} style={{ flex: 1 }} />
                     </View>
                   ) : (
-                    <View style={{ flexDirection: 'row', gap: 8 }}>
-                      <Btn small title="Show QR" icon="📱" onPress={() => setQrFor(s)} style={{ flex: 1 }} />
+                    <View style={{ gap: 8 }}>
+                      <Btn small title="Show QR to get paid" icon="📱" onPress={() => setQrFor(s)} />
+                      <View style={{ flexDirection: 'row', gap: 8 }}>
                       <Btn small title={t("Got it in cash")} kind="soft" onPress={() => record(s, 'cash')} style={{ flex: 1 }} />
                       <Btn small title={t("Remind")} icon="💌" kind="soft" style={{ flex: 1 }}
                         onPress={() => router.push({ pathname: '/assistant', params: { group: groupId, nudge: s.from_member } })} />
+                    </View>
                     </View>
                   )}
                 </Card>
